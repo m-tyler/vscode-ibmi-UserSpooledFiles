@@ -23,5 +23,5 @@ Has support for:
 
 ## Commands 
 * IBM i SPLF: Refresh Spooled File Browser 
-* IBM i SPLF: add Spooled File Filter 
+* IBM i SPLF: Add Spooled File Filter 
 * IBM i SPLF: Delete Spooled File Filter 
