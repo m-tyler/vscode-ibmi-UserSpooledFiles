@@ -20,3 +20,8 @@ Has support for:
 ## TODO:
 *  Allow for searches over all spooled files of user.
 *  Download with line spacing in effect.
+
+## Commands 
+* IBM i SPLF: Refresh Spooled File Browser 
+* IBM i SPLF: add Spooled File Filter 
+* IBM i SPLF: Delete Spooled File Filter 
