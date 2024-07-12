@@ -1,5 +1,5 @@
 {
-  "name": "vscode-ibmi-splfbrowser",
+  "name": "vscode-ibmi-UserSpooledFiles",
   "displayName": "Code for IBM i User Spooled Files",
   "description": "Tools to view and manage user spooled files on IBM i",
   "version": "0.0.4",
@@ -10,7 +10,7 @@
   },
   "author": {
     "name": "Matt Tyler",
-    "url": "https://github.com/UserSpooledFiles"
+    "url": "https://github.com/m-tyler/"
   },
   "publisher": "m-tyler",
   "repository": {
