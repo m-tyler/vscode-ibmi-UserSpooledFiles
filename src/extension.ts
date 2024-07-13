@@ -13,7 +13,7 @@ export async function activate(context: vscode.ExtensionContext) {
 		initializeSpooledFileBrowser(context);
 		await initializeSpooledFileSearchView(context);
 		
-		console.log('Congratulations, extension "vscode-ibmi-usrsplfs" is now active!');
+		console.log('Congratulations, extension "vscode-ibmi-UserSpooledFiles" is now active!');
 }
 
 // this method is called when your extension is deactivated

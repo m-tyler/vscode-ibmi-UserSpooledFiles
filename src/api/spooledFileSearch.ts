@@ -78,7 +78,7 @@ export namespace UserSplfSearch {
         });
         await writeFileAsync(tmpobj, query.join(`\n`), `utf8`);
         await client.putFile(tmpobj, tempRmt);
-        if (setccsid) await connection.sendCommand({ command: `${setccsid} 1208 ${tempRmt}` });
+        if (setccsid) {await connection.sendCommand({ command: `${setccsid} 1208 ${tempRmt}` })};
         await connection.runCommand({
           command: `QSYS/RUNSQLSTM SRCSTMF('${tempRmt}') COMMIT(*NONE) NAMING(*SQL)`
           , environment: `ile`
@@ -93,8 +93,8 @@ export namespace UserSplfSearch {
       from ALL_USER_SPOOLED_FILE_DATA AMD
       where upper(SPOOL_DATA) like upper('%${sanitizeSearchTerm(searchTerm)}%');`
           ;
-        const Rs = await Code4i!.runSQL(sqlStatement);
-        var resultString = Rs.map(function (RsElem) { return RsElem.SEARCH_RESULT; }).join("\n");
+        const rs = await Code4i!.runSQL(sqlStatement);
+        var resultString = rs.map(function (rsElem) { return rsElem.SEARCH_RESULT; }).join("\n");
         var result = {
           code: 0,
           stdout: `${resultString}`,
