@@ -20,6 +20,7 @@ Has support for:
 ## TODO:
 *  Allow for searches over all spooled files of user.
 *  Download with line spacing in effect.
+*  re-activate hover ability so user text and spooled file counts show again.  That feature disappeared when I separated this project from a fork of the base Code for i project.
 
 ## Commands 
 * IBM i SPLF: Refresh Spooled File Browser 
