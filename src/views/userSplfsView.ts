@@ -1,10 +1,10 @@
 
+import { SortOptions } from '@halcyontech/vscode-ibmi-types/api/IBMiContent';
 import vscode, { l10n, TreeDataProvider } from 'vscode';
+import { IBMiContentSplf } from "../api/IBMiContentSplf";
 import { getSpooledFileUri } from '../filesystem/qsys/SplfFs';
 import { Code4i } from '../tools';
-import { IBMiSpooledFile,IBMiSplfUser } from '../typings';
-import { IBMiContentSplf } from "../api/IBMiContentSplf";
-import { SortOptions } from '@halcyontech/vscode-ibmi-types/api/IBMiContent';
+import { IBMiSplfUser, IBMiSpooledFile } from '../typings';
 
 
 //https://code.visualstudio.com/api/references/icons-in-labels
@@ -68,7 +68,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
           break;
         }
 
-      } else { // no context exists in tree yet, get from settings
+      } else if(config.usersSpooledFile) { // no context exists in tree yet, get from settings if present
         items.push(...config.usersSpooledFile.map(
           (theUser: any) => new SpooledFileUser(element, { user: theUser, }, connection.currentUser)
         ));
