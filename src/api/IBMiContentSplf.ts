@@ -14,7 +14,7 @@ export type SortOrder = `name` | `type`;
 export type SortOptions = {
   order: "name" | "date" | "?"
   ascending?: boolean
-}
+};
 export namespace IBMiContentSplf {
   /**
   * @param {string} user 
@@ -128,7 +128,7 @@ export namespace IBMiContentSplf {
             // fileExtension = `txt`;
             // DLYJOB to ensure the CPY command completes in time.
             cpysplfCompleted = await connection.runCommand({
-              command: `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*NONE) STMFOPT(*REPLACE) ${openMode == 'withSpace' ? `CTLCHAR(*PRTCTL)` : ``} \nDLYJOB DLY(1)\nCPY OBJ('${tempRmt}') TOOBJ('${tempRmt}') TOCCSID(1208) DTAFMT(*TEXT) REPLACE(*YES)`
+              command: `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*NONE) STMFOPT(*REPLACE) ${openMode === 'withSpace' ? `CTLCHAR(*PRTCTL)` : ``} \nDLYJOB DLY(1)\nCPY OBJ('${tempRmt}') TOOBJ('${tempRmt}') TOCCSID(1208) DTAFMT(*TEXT) REPLACE(*YES)`
               , environment: `ile`
             });
         }
@@ -149,13 +149,13 @@ export namespace IBMiContentSplf {
 
     await client.getFile(tmplclfile, tempRmt);
     results = await readFileAsync(tmplclfile, fileEncoding);
-    if (cpysplfCompleted.code === 0 && openMode == 'withSpace') {
+    if (cpysplfCompleted.code === 0 && openMode === 'withSpace') {
       // todo: need to read first temp file, process control characters and write a new tempfile to pass to rest of code
       const tempRmt2 = connection.getTempRemote(uriPath);
       results = reWriteWithSpaces(results, pageLength); 
       // results = reWriteWithSpaces(results);
     }
-    return results
+    return results;
 
   }
   /**
@@ -215,8 +215,8 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
     let line = lines[i];
     // The value for the skipToLine/spaceToLine values include the actual text line,
     //   reduce by one line because we always print the text
-    const skipToLine: number = line.substring(0, 3) == `   ` ? -1 : +line.substring(0, 3) - 1;
-    const spaceToLines: number = line.substring(3, 4) == ` ` ? -1 : +line.substring(3, 4) - 1;
+    const skipToLine: number = line.substring(0, 3) === `   ` ? -1 : +line.substring(0, 3) - 1;
+    const spaceToLines: number = line.substring(3, 4) === ` ` ? -1 : +line.substring(3, 4) - 1;
     line = line.substring(4);
     //     1. If skipTo is < lineCount then  
     //     -- newPageAction
@@ -235,8 +235,8 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
         if (pageLength >lineCount) {
           for (let l = 1; l <= 3; l++) { newLines.push(``); }
         }
-        // This condition shold be every new subsequent page
-        for (let l = lineCount; l < lineCount+skipToLine; l++) { newLines.push(``); lineCount++; }
+        // This condition should be every new subsequent page
+        for (let l = lineCount; l < lineCount+skipToLine; l++) { newLines.push(``); /*lineCount++;*/ }
         lineCount = 0;
         pageCount++;
       } else {

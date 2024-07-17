@@ -28,7 +28,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.sortSPLFSFilesByName`, (node: SpooledFileUser | UserSpooledFiles) => {
       node.sortBy({ order: "name" });
-      if (node.contextValue == `spooledfile`) {
+      if (node.contextValue === `spooledfile`) {
         splfBrowserObj.refresh(node.parent);
       }
       else {
@@ -38,7 +38,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.sortSPLFSFilesByDate`, (node) => {
       node.sortBy({ order: "date" });
-      if (node.contextValue == `spooledfile`) {
+      if (node.contextValue === `spooledfile`) {
         splfBrowserObj.refresh(node.parent);
       }
       else {
@@ -114,7 +114,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
                   // splfBrowserObj.refresh( node );
                 }
               }
-            })
+            });
         }
       } catch (e) {
         // console.log(e);
@@ -210,7 +210,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               command: `CRTSRCPF FILE(${tempLib}/${TempFileName}) MBR(${TempMbrName}) RCDLEN(112)`
               , environment: `ile`
             });
-            await content.uploadMemberContent(asp, tempLib, TempFileName, TempMbrName, dltCmdSrc)
+            await content.uploadMemberContent(asp, tempLib, TempFileName, TempMbrName, dltCmdSrc);
             let dltCommands = `SBMJOB CMD(RUNSQLSTM SRCFILE(${tempLib}/${TempFileName}) SRCMBR(${TempMbrName}) COMMIT(*NC) MARGINS(*SRCFILE) OPTION(*NOLIST)) JOB(DLTSPLFS) JOBQ(QUSRNOMAX) MSGQ(*NONE)`
               ;
             const commandResult = await connection.runCommand({
@@ -277,7 +277,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               command: `CRTSRCPF FILE(${tempLib}/${TempFileName}) MBR(${TempMbrName}) RCDLEN(112)`
               , environment: `ile`
             });
-            await content.uploadMemberContent(asp, tempLib, TempFileName, TempMbrName, dltCmdSrc)
+            await content.uploadMemberContent(asp, tempLib, TempFileName, TempMbrName, dltCmdSrc);
             let dltCommands = `SBMJOB CMD(RUNSQLSTM SRCFILE(${tempLib}/${TempFileName}) SRCMBR(${TempMbrName}) COMMIT(*NC) MARGINS(*SRCFILE) OPTION(*NOLIST)) JOB(DLTSPLFS) JOBQ(QUSRNOMAX) MSGQ(*NONE)`
               ;
             const commandResult = await connection.runCommand({
@@ -393,12 +393,12 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         searchUser = node.user;
       }
 
-      if (!searchUser) return;
+      if (!searchUser) {return;}
 
       searchTerm = await vscode.window.showInputBox({
         // prompt: `Filter ${searchUser}'s spooled files. Delete value to clear filter.`,
         prompt: l10n.t(`Filter {0}'s spooled files. Delete value to clear filter.`, searchUser),
-        value: `${node.contextValue == `spooledfile` ? node.parent.filter : node.filter}`
+        value: `${node.contextValue === `spooledfile` ? node.parent.filter : node.filter}`
       });
 
       if (searchTerm) {
@@ -414,7 +414,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
             searchTerm = searchTerm.toLocaleUpperCase();
             const splfnum = await IBMiContentSplf.getUserSpooledFileCount(searchUser);
             if (Number(splfnum) > 0) {
-              if (node.contextValue == `spooledfile`) {
+              if (node.contextValue === `spooledfile`) {
                 node.parent.setFilter(searchTerm);
                 vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node.parent);
               } else {
@@ -437,7 +437,10 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       }
 
     }),
-    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFile`, async (node) => {
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing`, async (node) => {
+      return vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileDefault", node, "withSpace" as SplfDefaultOpenMode);
+    }),
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFileDefault`, async (node, overrideMode?: SplfDefaultOpenMode) => {
       const config = getConfig();
       const contentApi = getContent();
       const connection = getConnection();
@@ -449,8 +452,8 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           prompt: l10n.t(`Type of file to create, TXT, PDF`),
           value: `TXT`
         });
-        if (!fileExtension) { return }
-        fileExtension = fileExtension.toLowerCase()
+        if (!fileExtension) { return; }
+        fileExtension = fileExtension.toLowerCase();
         switch (fileExtension) {
           case `pdf`:
           // case `html`:
@@ -462,7 +465,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         }
         let options: SplfOpenOptions = {};
         options.pageLength = node.pageLength;
-        options.openMode = "withSpaces";
+        options.openMode = (overrideMode || "withoutSpaces");
 
         const splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.path, node.name, node.qualifiedJobName
           , node.number, fileExtension, options);
@@ -471,13 +474,13 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         // let localFilePathBase = os.homedir() +`\\` +extraFolder +`\\` +fileName +`.`+fileExtension; //FUTURE: in case we let user pick another download loc
         let localFilePathBase = os.homedir() + `\\` + fileName + `.` + fileExtension;
         const localFile = await vscode.window.showSaveDialog({ defaultUri: vscode.Uri.file(localFilePathBase) });
-
+        // console.log();
         if (localFile) {
           let localPath = localFile.path;
           if (process.platform === `win32`) {
             //Issue with getFile not working propertly on Windows
             //when there was a / at the start.
-            if (localPath[0] === `/`) localPath = localPath.substring(1);
+            if (localPath[0] === `/`) {localPath = localPath.substring(1);}
           }
           try {
             let fileEncoding: BufferEncoding | null = `utf8`;
@@ -509,7 +512,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSpooledFile", async (item, overrideMode?: SplfDefaultOpenMode) => {
       let options: SplfOpenOptions = {};
       options.openMode = (overrideMode || "withoutSpaces");
-      options.readonly = item.parent.protected
+      options.readonly = item.parent.protected;
       const uri = getUriFromPath_Splf(item.path, options);
       const existingUri = findExistingDocumentUri(uri);
 
@@ -532,7 +535,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
 
     })
 
-  )
+  );
   getInstance()?.onEvent(`connected`, run_on_connection);
 }
 

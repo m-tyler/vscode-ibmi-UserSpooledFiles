@@ -2,7 +2,7 @@
   "name": "vscode-ibmi-UserSpooledFiles",
   "displayName": "Code for IBM i User Spooled Files",
   "description": "Tools to view and manage user spooled files on IBM i",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "preview": true,
   "license": "MIT",
   "engines": {
@@ -63,6 +63,10 @@
       {
         "id": "vscode-ibmi-splfbrowser.openSpooledFile",
         "label": "Open Spooled File"
+      },
+      {
+        "id": "vscode-ibmi-splfbrowser.downloadSpooledFile",
+        "label": "Download Spooled File"
       }
     ],
     "menus": {
@@ -114,16 +118,29 @@
           "command": "vscode-ibmi-splfbrowser.sortSPLFSFilesByDate"
         }
       ],
+      "vscode-ibmi-splfbrowser.downloadSpooledFile": [
+        {
+          "command": "vscode-ibmi-splfbrowser.downloadSpooledFileDefault"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing"
+        }
+      ],
       "view/item/context": [
+        {
+          "command": "vscode-ibmi-splfbrowser.refreshSPLFBrowser",
+          "group": "inline@1",
+          "when": "view == splfBrowser"
+        },
         {
           "command": "vscode-ibmi-splfbrowser.filterSpooledFiles",
           "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
-          "group": "inline"
+          "group": "inline@2"
         },
         {
           "command": "vscode-ibmi-splfbrowser.deleteUserSpooledFileFilter",
           "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
-          "group": "inline"
+          "group": "inline@3"
         },
         {
           "command": "vscode-ibmi-splfbrowser.filterSpooledFiles",
@@ -166,11 +183,6 @@
           "group": "2_spooledfile@3"
         },
         {
-          "command": "vscode-ibmi-splfbrowser.downloadSpooledFile",
-          "when": "view == splfBrowser && viewItem =~ /^spooledfile.*$/",
-          "group": "2_spooledfile@5"
-        },
-        {
           "command": "vscode-ibmi-splfbrowser.searchSpooledFiles",
           "when": "view == splfBrowser && viewItem =~ /^spooledfile.*$/",
           "group": "1_spooledfile@2"
@@ -189,11 +201,20 @@
           "submenu": "vscode-ibmi-splfbrowser.sortSpooledFiles",
           "when": "view == splfBrowser",
           "group": "0_open@3"
+        },
+        {
+          "submenu": "vscode-ibmi-splfbrowser.downloadSpooledFile",
+          "when": "view == splfBrowser && viewItem =~ /^spooledfile.*$/",
+          "group": "0_open@5"
         }
       ],
       "commandPalette": [
         {
-          "command": "vscode-ibmi-splfbrowser.downloadSpooledFile",
+          "command": "vscode-ibmi-splfbrowser.downloadSpooledFileDefault",
+          "when": "never"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing",
           "when": "never"
         },
         {
@@ -218,10 +239,6 @@
         },
         {
           "command": "vscode-ibmi-splfbrowser.moveSpooledFile",
-          "when": "never"
-        },
-        {
-          "command": "vscode-ibmi-splfbrowser.openSpooledFile",
           "when": "never"
         },
         {
@@ -315,8 +332,14 @@
         "icon": "$(move)"
       },
       {
-        "command": "vscode-ibmi-splfbrowser.downloadSpooledFile",
-        "title": "Download spooled file",
+        "command": "vscode-ibmi-splfbrowser.downloadSpooledFileDefault",
+        "title": "without line spacing",
+        "enablement": "code-for-ibmi:connected",
+        "icon": "$(down)"
+      },
+      {
+        "command": "vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing",
+        "title": "with line spacing",
         "enablement": "code-for-ibmi:connected",
         "icon": "$(down)"
       },
@@ -335,12 +358,6 @@
       {
         "command": "vscode-ibmi-splfbrowser.sortSPLFSFilesByDate",
         "title": "Date",
-        "category": "IBM i SPLF"
-      },
-      {
-        "command": "vscode-ibmi-splfbrowser.openSpooledFile",
-        "enablement": "code-for-ibmi:connected",
-        "title": "with Line Spacing",
         "category": "IBM i SPLF"
       },
       {

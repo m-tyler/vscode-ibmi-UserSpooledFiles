@@ -14,13 +14,14 @@ Has support for:
 *  Download spooled file to .TXT or PDF
 *  Delete spooled files by user, specific line, specific name, all mathcing filter. 
 *  Move a spooled file to another output queue. 
+*  Download with line spacing in effect.
 ---
 
 
-## TODO:
-*  Allow for searches over all spooled files of user.
-*  Download with line spacing in effect.
-*  re-activate hover ability so user text and spooled file counts show again.  That feature disappeared when I separated this project from a fork of the base Code for i project.
+## TODOs:
+*  Allow for searches over all spooled files of user. 
+*  Re-activate hover ability so user text and spooled file counts show again. 
+*  Re-write open with ling spacing to account for overprinted lines.  
 ---
 
 ## Commands 

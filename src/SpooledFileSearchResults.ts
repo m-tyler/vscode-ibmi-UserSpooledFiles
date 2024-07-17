@@ -19,12 +19,12 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
   let search = <SearchParms>{};
   context.subscriptions.push(
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.searchSpooledFiles`, async (node) => {
-      
+      //Initiate search from Spooled file item
       if (node && (/^spooledfile/.test( node.contextValue))) {
         search.user = node.user;
         search.name = node.name;
         search.word = node.parent.filter;
-      }
+      }//Initiate search from user filter
       else if (node && (/^splfuser/.test( node.contextValue))) {
         search.user = node.user;
       }
@@ -44,7 +44,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
         });
       }
 
-      if (!search.name) {return;}
+      // if (!search.name) {return;}
 
       search.term = await vscode.window.showInputBox({
         prompt: l10n.t(`Search in spooled files named {0}`,search.name)
