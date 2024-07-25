@@ -1,5 +1,5 @@
 import vscode, { l10n, } from 'vscode';
-import { Code4i, getInstance } from "./tools";
+import { Code4i, getInstance, checkExtensionState } from "./tools";
 import { UserSplfSearch } from './api/spooledFileSearch';
 import { UserSplfSearchView } from './views/userSplfsSearchView';
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
@@ -39,16 +39,22 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
       if (!search.name) {
         search.name = await vscode.window.showInputBox({
           value: ``,
-          prompt: l10n.t(`Enter spooled file name to search over`),
+          prompt: l10n.t(`Enter spooled file name to search over, or blank for all`),
           title: l10n.t(`Search in named spooled file`),
         });
       }
 
-      // if (!search.name) {return;}
+      if (!search.name && search.name !== ``) {return;}
 
-      search.term = await vscode.window.showInputBox({
-        prompt: l10n.t(`Search in spooled files named {0}`,search.name)
-      });
+      if (search.name !== ``) {
+        search.term = await vscode.window.showInputBox({
+          prompt: l10n.t(`Search for string in spooled files named {0}`,search.name)
+        });
+      } else {
+        search.term = await vscode.window.showInputBox({
+          prompt: l10n.t(`Search for string in ALL spooled files`)
+        });
+      }
 
       if (search.term) {
         try {
@@ -155,4 +161,5 @@ export function setSearchResultsSplf(actionCommand: string, term: string, result
 
 async function runOnConnection(): Promise<void> {
   const library = Code4i.getTempLibrary();
+  await checkExtensionState()
 }

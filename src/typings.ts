@@ -1,4 +1,5 @@
 import { QsysFsOptions } from "@halcyontech/vscode-ibmi-types"
+import { Range } from "vscode"
 
 export interface IBMiSpooledFile {
   user: string
@@ -30,4 +31,11 @@ export interface SplfOpenOptions {
   openMode?: SplfDefaultOpenMode;
   position?: Range;
   pageLength?: number;
+}
+
+export interface FuncInfo {
+  funcSysLib: string
+  funcSysName: string
+  text: string
+  comment: string
 }

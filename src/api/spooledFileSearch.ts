@@ -65,7 +65,7 @@ export namespace UserSplfSearch {
           sequence = decimalSequence ? ((i + 1) / 100) : i + 1;
           insRows.push(
             `('${objects[i].user}', '${objects[i].queue}', '${objects[i].qualifiedJobName}', '${objects[i].name}', '${objects[i].number}')`
-          )
+          );
         }
 
         // Row length is the length of the SQL string used to insert each row
@@ -78,7 +78,7 @@ export namespace UserSplfSearch {
         });
         await writeFileAsync(tmpobj, query.join(`\n`), `utf8`);
         await client.putFile(tmpobj, tempRmt);
-        if (setccsid) {await connection.sendCommand({ command: `${setccsid} 1208 ${tempRmt}` })};
+        if (setccsid) {await connection.sendCommand({ command: `${setccsid} 1208 ${tempRmt}` });}
         await connection.runCommand({
           command: `QSYS/RUNSQLSTM SRCSTMF('${tempRmt}') COMMIT(*NONE) NAMING(*SQL)`
           , environment: `ile`
@@ -88,7 +88,7 @@ export namespace UserSplfSearch {
           `with ALL_USER_SPOOLED_FILE_DATA (SFUSER,OUTQ,QJOB,SFILE,SFNUMBER,SPOOL_DATA,ORDINAL_POSITION) as (
         select SFUSER,OUTQ,QJOB,SFILE,SFNUMBER,SPOOLED_DATA,SD.ORDINAL_POSITION
           from ${tempLib}.${tempName}
-          ,table (SYSTOOLS.SPOOLED_FILE_DATA(trim(QJOB),SFILE,SFNUMBER,'NO')) SD )
+          ,table (SPOOLED_FILE_DATA(trim(QJOB),SFILE,SFNUMBER,'NO')) SD )
     select trim(SFUSER)||'/'||trim(OUTQ)||'/'||trim(SFILE)||'~'||trim(regexp_replace(QJOB,'(\\w*)/(\\w*)/(\\w*)','$3~$2~$1'))||'~'||trim(SFNUMBER)||'.splf'||':'||char(ORDINAL_POSITION)||':'||varchar(trim(SPOOL_DATA),132) SEARCH_RESULT
       from ALL_USER_SPOOLED_FILE_DATA AMD
       where upper(SPOOL_DATA) like upper('%${sanitizeSearchTerm(searchTerm)}%');`
@@ -153,7 +153,7 @@ function parseGrepOutput(output: string, filter?: string, pathTransformer?: (pat
         result.lines.push({
           number: Number(parts[1]),
           content: curContent
-        })
+        });
       }
     }
   }
@@ -164,7 +164,7 @@ function nthIndex(aString: string, pattern: string, n: number) {
   let index = -1;
   while (n-- && index++ < aString.length) {
     index = aString.indexOf(pattern, index);
-    if (index < 0) break;
+    if (index < 0) {break;}
   }
   return index;
 }
