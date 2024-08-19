@@ -1,7 +1,7 @@
 import vscode, { l10n, } from 'vscode';
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
 import { UserSplfSearch } from './api/spooledFileSearch';
-import { Code4i, getInstance } from "./tools";
+import { Code4i, getInstance, checkSystemFuntionState } from "./tools";
 import { UserSplfSearchView } from './views/userSplfsSearchView';
 // import setSearchResults from "@halcyontech/vscode-ibmi-types/instantiate";
 
@@ -39,16 +39,22 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
       if (!search.name) {
         search.name = await vscode.window.showInputBox({
           value: ``,
-          prompt: l10n.t(`Enter spooled file name to search over`),
+          prompt: l10n.t(`Enter spooled file name to search over, or blank for *ALL`),
           title: l10n.t(`Search in named spooled file`),
         });
       }
 
-      // if (!search.name) {return;}
+      if (!search.name && search.name !== ``) { return; }
 
-      search.term = await vscode.window.showInputBox({
-        prompt: l10n.t(`Search in spooled files named {0}`, search.name)
-      });
+      if (search.name !== ``) {
+        search.term = await vscode.window.showInputBox({
+          prompt: l10n.t(`Search for string in spooled files named {0}`, search.name)
+        });
+      } else {
+        search.term = await vscode.window.showInputBox({
+          prompt: l10n.t(`Search for string in *ALL spooled files`)
+        });
+      }
 
       if (search.term) {
         try {
@@ -112,6 +118,25 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
         }
       }
 
+    }),
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.dropUpdatedSPOOLED_FILE_DATA_TF`, async () => {
+      await checkSystemFuntionState( 'SPOOLED_FILE_DATA' , 'drop');
+    }),
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.createUpdatedSPOOLED_FILE_DATA_TF`, async (node) => {
+      let message = l10n.t(`Are you having troubles searching through spooled files?`);
+      let detail = ``;
+      vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`))
+        .then(async result => {
+          if (result === l10n.t(`Yes`)) {
+            let message = l10n.t(`Do you want to install a varient of function SYSTOOLS.SPOOOLED_FILE_DATA into ILEDITOR?`);
+            vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`))
+              .then(async result => {
+                if (result === l10n.t(`Yes`)) {
+                  await checkSystemFuntionState( 'SPOOLED_FILE_DATA' , 'add');
+                }
+              });
+          }
+        });
     }),
     vscode.window.registerTreeDataProvider(`UserSplfSearchView`, userSplfSearchViewProvider),
   );

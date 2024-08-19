@@ -2,7 +2,7 @@
   "name": "vscode-ibmi-UserSpooledFiles",
   "displayName": "Code for IBM i User Spooled Files",
   "description": "Tools to view and manage user spooled files on IBM i",
-  "version": "0.0.6",
+  "version": "0.0.8",
   "preview": true,
   "license": "MIT",
   "engines": {
@@ -129,8 +129,8 @@
       "view/item/context": [
         {
           "command": "vscode-ibmi-splfbrowser.refreshSPLFBrowser",
-          "group": "inline@1",
-          "when": "view == splfBrowser"
+          "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
+          "group": "inline@1"
         },
         {
           "command": "vscode-ibmi-splfbrowser.filterSpooledFiles",
@@ -397,6 +397,18 @@
         "command": "vscode-ibmi-splfbrowser.revealSPLFBrowser",
         "enablement": "code-for-ibmi:connected",
         "title": "Reveal in User SPLF Browser",
+        "category": "IBM i SPLF"
+      },
+      {
+        "command": "vscode-ibmi-splfbrowser.createUpdatedSPOOLED_FILE_DATA_TF",
+        "enablement": "code-for-ibmi:connected",
+        "title": "Create updated version of SPOOLED_FILE_DATA ",
+        "category": "IBM i SPLF"
+      },
+      {
+        "command": "vscode-ibmi-splfbrowser.dropUpdatedSPOOLED_FILE_DATA_TF",
+        "enablement": "code-for-ibmi:connected",
+        "title": "drop updated version of SPOOLED_FILE_DATA ",
         "category": "IBM i SPLF"
       }
     ],
