@@ -1,6 +1,6 @@
-DONE: Add the refresh icon to each filter line
+    DONE: Add the refresh icon to each filter line
 TODO: Re-write open with ling spacing to account for overprinted lines.  The lines are 0 in column 4.  They need to merge with the last non-zero line
-DONE: Sort user reports in date descending order at first open.
-TODO: Allow for searches over all spooled files of user.  Need to figure out how to make SQL tool, , to read any spooled file with plan text but coded with `DBCS data = *YES` fail to open.  User needs a result table with DBCS capable CCSID but the SQL tool does not allow for this. 
-DONE Download with line spacing in effect.
+    DONE: Sort user reports in date descending order at first open.
+TODO: Allow for searches over all spooled files of user.  Need to figure out how to make SQL tool,SYSTOOLS.SPOOLED_FILE_DATA , to read any spooled file with plan text but coded with `DBCS data = *YES` fail to open.  User needs a result table with DBCS capable CCSID but the SQL tool does not allow for this. 
+    DONE: Download with line spacing in effect.
 TODO: re-activate hover ability so user text and spooled file counts show again.  That feature disappeared when I separated this project from a fork of the base Code for i project.
