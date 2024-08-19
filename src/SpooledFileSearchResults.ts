@@ -1,8 +1,8 @@
 import vscode, { l10n, } from 'vscode';
-import { Code4i, getInstance } from "./tools";
-import { UserSplfSearch } from './api/spooledFileSearch';
-import { UserSplfSearchView } from './views/userSplfsSearchView';
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
+import { UserSplfSearch } from './api/spooledFileSearch';
+import { Code4i, getInstance } from "./tools";
+import { UserSplfSearchView } from './views/userSplfsSearchView';
 // import setSearchResults from "@halcyontech/vscode-ibmi-types/instantiate";
 
 interface SearchParms {
@@ -20,12 +20,12 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
   context.subscriptions.push(
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.searchSpooledFiles`, async (node) => {
       //Initiate search from Spooled file item
-      if (node && (/^spooledfile/.test( node.contextValue))) {
+      if (node && (/^spooledfile/.test(node.contextValue))) {
         search.user = node.user;
         search.name = node.name;
         search.word = node.parent.filter;
       }//Initiate search from user filter
-      else if (node && (/^splfuser/.test( node.contextValue))) {
+      else if (node && (/^splfuser/.test(node.contextValue))) {
         search.user = node.user;
       }
       if (!search.user) {
@@ -47,7 +47,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
       // if (!search.name) {return;}
 
       search.term = await vscode.window.showInputBox({
-        prompt: l10n.t(`Search in spooled files named {0}`,search.name)
+        prompt: l10n.t(`Search in spooled files named {0}`, search.name)
       });
 
       if (search.term) {
@@ -57,20 +57,20 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
             title: l10n.t(`Searching`),
           }, async progress => {
             progress.report({
-              message: l10n.t(`'{0}' in {1}, {2} spooled files.`,search.term,search.user,search.name)
+              message: l10n.t(`'{0}' in {1}, {2} spooled files.`, search.term, search.user, search.name)
             });
             const splfnum = await IBMiContentSplf.getUserSpooledFileCount(search.user, search.name);
             if (Number(splfnum) > 0) {
               // NOTE: if more messages are added, lower the timeout interval
               const timeoutInternal = 9000;
               const searchMessages = [
-                l10n.t(`'{0}' in {1} spooled files.`,search.term,search.name),
-                l10n.t(`This is taking a while because there are {0} spooled files. Searching '{1}' in {2} still.`,splfnum,search.term,search.user),
-                l10n.t(`What's so special about '{0}' anyway?`,search.term),
-                l10n.t(`Still searching '{0}' in {1}...`,search.term,search.user),
+                l10n.t(`'{0}' in {1} spooled files.`, search.term, search.name),
+                l10n.t(`This is taking a while because there are {0} spooled files. Searching '{1}' in {2} still.`, splfnum, search.term, search.user),
+                l10n.t(`What's so special about '{0}' anyway?`, search.term),
+                l10n.t(`Still searching '{0}' in {1}...`, search.term, search.user),
                 l10n.t(`Wow. This really is taking a while. Let's hope you get the result you want.`),
-                l10n.t(`How does one end up with {0} spooled files.  Ever heard of cleaning up?`,splfnum),
-                l10n.t(`'{0}' in {1}.`,search.term,search.user),
+                l10n.t(`How does one end up with {0} spooled files.  Ever heard of cleaning up?`, splfnum),
+                l10n.t(`'{0}' in {1}.`, search.term, search.user),
               ];
               let currentMessage = 0;
               const messageTimeout = setInterval(() => {
@@ -95,11 +95,11 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
                 results = results.sort((a, b) => {
                   return a.path.localeCompare(b.path);
                 });
-                setSearchResultsSplf(`searchUserSpooledFiles`,search.term, results);
+                setSearchResultsSplf(`searchUserSpooledFiles`, search.term, results);
                 // setSearchResults(search.term, results.sort((a, b) => a.path.localeCompare(b.path)));
 
               } else {
-                vscode.window.showInformationMessage(l10n.t(`No results found searching for '{0}' in {1}.`, search.term,search.name));
+                vscode.window.showInformationMessage(l10n.t(`No results found searching for '{0}' in {1}.`, search.term, search.name));
               }
             } else {
               vscode.window.showErrorMessage(l10n.t(`No spooled files to search.`));
@@ -115,7 +115,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
     }),
     vscode.window.registerTreeDataProvider(`UserSplfSearchView`, userSplfSearchViewProvider),
   );
-  getInstance()?.onEvent(`connected`, runOnConnection );
+  getInstance()?.subscribe(context, `connected`, "Get temporary library", runOnConnection);
 }
 
 function getConfig() {
@@ -151,7 +151,7 @@ function getContent() {
 // let userSplfSearchViewProvider = <UserSplfSearchView>{};
 export function setSearchResultsSplf(actionCommand: string, term: string, results: UserSplfSearch.Result[]) {
   userSplfSearchViewProvider.setResults(actionCommand, term, results);
-} 
+}
 
 async function runOnConnection(): Promise<void> {
   const library = Code4i.getTempLibrary();

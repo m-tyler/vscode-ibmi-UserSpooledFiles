@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/naming-convention */
+import { FocusOptions } from '@halcyontech/vscode-ibmi-types/';
 import fs from "fs";
 import os from "os";
-import util from "util";
 import path from "path";
+import util from "util";
 import vscode, { l10n, } from 'vscode';
-import { Code4i, getInstance, makeid, findExistingDocumentUri } from "./tools";
-import { IBMiSpooledFile, SplfDefaultOpenMode, SplfOpenOptions } from './typings';
-import { IBMiContentSplf } from "./api/IBMiContentSplf";
-import SPLFBrowser, { SpooledFileUser, UserSpooledFiles } from './views/userSplfsView';
 import { SplfFS, getUriFromPath_Splf, parseFSOptions } from "../src/filesystem/qsys/SplfFs";
-import { FocusOptions } from '@halcyontech/vscode-ibmi-types/';
+import { IBMiContentSplf } from "./api/IBMiContentSplf";
+import { Code4i, findExistingDocumentUri, getInstance, makeid } from "./tools";
+import { IBMiSpooledFile, SplfDefaultOpenMode, SplfOpenOptions } from './typings';
+import SPLFBrowser, { SpooledFileUser, UserSpooledFiles } from './views/userSplfsView';
 
 const writeFileAsync = util.promisify(fs.writeFile);
 
@@ -101,7 +101,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           removeUser = removeUser.trim();
           let message = l10n.t(`Are you sure you want to delete the user spooled file filter,'{0}'?`, removeUser);
           let detail = ``;
-          vscode.window.showWarningMessage(message, {modal:true, detail},l10n.t(`Yes`), l10n.t(`No`))
+          vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`))
             .then(async result => {
               if (result === l10n.t(`Yes`)) {
                 const inx = usersSpooledFile.indexOf(removeUser);
@@ -148,10 +148,10 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         const config = getConfig();
         //Running from right click
 
-        const message = l10n.t('Are you sure you want to delete {0}?',node.path);
-        const detail = undefined ;
-      // let result = await vscode.window.showWarningMessage(l10n.t(`Are you sure you want to delete spooled file {0}?`, node.path), l10n.t(`Yes`), l10n.t(`Cancel`));
-        let result = await vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`),l10n.t(`Cancel`));
+        const message = l10n.t('Are you sure you want to delete {0}?', node.path);
+        const detail = undefined;
+        // let result = await vscode.window.showWarningMessage(l10n.t(`Are you sure you want to delete spooled file {0}?`, node.path), l10n.t(`Yes`), l10n.t(`Cancel`));
+        let result = await vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`Cancel`));
 
         if (result === `Yes`) {
 
@@ -186,7 +186,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         let deleteCount = 0;
         let message = l10n.t(`Are you sure you want to delete ALL spooled files named {0}?`, node.name);
         let detail = ``;
-        let result = await vscode.window.showWarningMessage(message, {modal:true, detail}, l10n.t(`Yes`), l10n.t(`No`));
+        let result = await vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`));
 
         if (result === `Yes`) {
           const connection = getConnection();
@@ -253,7 +253,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         let deleteCount = 0;
         let message = l10n.t(`Are you sure you want to delete ALL spooled files filtered by value {1}?`, node.name, node.parent.filter);
         let detail = ``;
-        let result = await vscode.window.showWarningMessage(message, {modal:true, detail}, l10n.t(`Yes`), l10n.t(`No`));
+        let result = await vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`));
 
         if (result === `Yes`) {
           const connection = getConnection();
@@ -319,7 +319,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         //Running from right click
         let message = l10n.t(`Are you sure you want to delete ALL spooled files for user {0}?`, node.user);
         let detail = ``;
-        let result = await vscode.window.showWarningMessage(message, {modal:true, detail}, l10n.t(`Yes`), l10n.t(`No`));
+        let result = await vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`));
 
         if (result === `Yes`) {
 
@@ -393,7 +393,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         searchUser = node.user;
       }
 
-      if (!searchUser) {return;}
+      if (!searchUser) { return; }
 
       searchTerm = await vscode.window.showInputBox({
         // prompt: `Filter ${searchUser}'s spooled files. Delete value to clear filter.`,
@@ -480,7 +480,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           if (process.platform === `win32`) {
             //Issue with getFile not working propertly on Windows
             //when there was a / at the start.
-            if (localPath[0] === `/`) {localPath = localPath.substring(1);}
+            if (localPath[0] === `/`) { localPath = localPath.substring(1); }
           }
           try {
             let fileEncoding: BufferEncoding | null = `utf8`;
@@ -536,7 +536,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
     })
 
   );
-  getInstance()?.onEvent(`connected`, run_on_connection);
+  getInstance()?.subscribe(context, `connected`, "Refresh spooled file browser", run_on_connection);
 }
 
 function getConfig() {
