@@ -3,9 +3,10 @@ import util from "util";
 import fs from "fs";
 import tmp from "tmp";
 import { CommandResult } from "@halcyontech/vscode-ibmi-types";
-import { Code4i, makeid } from "../tools";
+import { Code4i, makeid, whereisCustomFunc} from "../tools";
 import { isProtectedFilter } from '../filesystem/qsys/SplfFs';
 import { IBMiContentSplf } from "../api/IBMiContentSplf";
+import { FuncInfo } from '../typings';
 
 const tmpFile = util.promisify(tmp.file);
 const writeFileAsync = util.promisify(fs.writeFile);
@@ -84,11 +85,12 @@ export namespace UserSplfSearch {
           , environment: `ile`
         });
         // on-server list of spooled files to search is built, now use in conjunction with searching that list of report data
+        let funcInfo: FuncInfo = await whereisCustomFunc('SPOOLED_FILE_DATA');
         const sqlStatement =
           `with ALL_USER_SPOOLED_FILE_DATA (SFUSER,OUTQ,QJOB,SFILE,SFNUMBER,SPOOL_DATA,ORDINAL_POSITION) as (
         select SFUSER,OUTQ,QJOB,SFILE,SFNUMBER,SPOOLED_DATA,SD.ORDINAL_POSITION
           from ${tempLib}.${tempName}
-          ,table (SPOOLED_FILE_DATA(trim(QJOB),SFILE,SFNUMBER,'NO')) SD )
+          ,table (${funcInfo.funcSysLib}.SPOOLED_FILE_DATA(trim(QJOB),SFILE,SFNUMBER,'NO')) SD )
     select trim(SFUSER)||'/'||trim(OUTQ)||'/'||trim(SFILE)||'~'||trim(regexp_replace(QJOB,'(\\w*)/(\\w*)/(\\w*)','$3~$2~$1'))||'~'||trim(SFNUMBER)||'.splf'||':'||char(ORDINAL_POSITION)||':'||varchar(trim(SPOOL_DATA),132) SEARCH_RESULT
       from ALL_USER_SPOOLED_FILE_DATA AMD
       where upper(SPOOL_DATA) like upper('%${sanitizeSearchTerm(searchTerm)}%');`

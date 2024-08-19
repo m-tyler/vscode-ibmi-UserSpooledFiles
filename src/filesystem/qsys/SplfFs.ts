@@ -54,8 +54,8 @@ export class SplfFS implements vscode.FileSystemProvider {
       // })
     );
 
-    // getInstance()?.onEvent("connected", () => this.updateSpooledFileSupport());
-    // getInstance()?.onEvent("disconnected", () => this.updateSpooledFileSupport());
+    // getInstance()?.subscribe(context, `connected`, "Connection Setup" , () => this.updateSpooledFileSupport());
+    // getInstance()?.subscribe(context, `disconnected`, "Disconnect clean up" , () => this.updateSpooledFileSupport());
   }
 
   // private updateSpooledFileSupport() {

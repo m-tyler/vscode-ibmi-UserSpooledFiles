@@ -43,7 +43,7 @@ export namespace Code4i {
   }
 
   export async function runSQL(sqlStatement: string): Promise<Tools.DB2Row[]> {
-    return getContent().runSQL(sqlStatement);
+    return getContent().ibmi.runSQL(sqlStatement);
   }
 
   export async function runCommand(command: RemoteCommand): Promise<CommandResult> {
@@ -87,7 +87,7 @@ export async function whereisCustomFunc(funcName: string): Promise<FuncInfo> {
   }
   let funcLookupRS: Tools.DB2Row[];
   let statement = `select SPECIFIC_SCHEMA,SPECIFIC_NAME,ROUTINE_TEXT,LONG_COMMENT from QSYS2.SYSFUNCS SF inner join table( values(1,'${currentUser}'),(2,'ILEDITOR'),(3,'SYSTOOLS'),(4,'QSYS2') ) LL (Pos, ASCHEMA) on ASCHEMA = SPECIFIC_SCHEMA where ROUTINE_NAME = '${funcName}' limit 1`;
-  funcLookupRS = await Code4i.getContent().runSQL(statement);
+  funcLookupRS = await Code4i.runSQL(statement);
   return {
     funcSysLib: String(funcLookupRS[0].SPECIFIC_SCHEMA),
     funcSysName: String(funcLookupRS[0].SPECIFIC_NAME),
@@ -96,40 +96,51 @@ export async function whereisCustomFunc(funcName: string): Promise<FuncInfo> {
   };
 }
 
-export async function checkExtensionState(): Promise<boolean> {
+export async function checkSystemFuntionState(sysFunction: string, action: string): Promise<boolean> {
 
   let lstate: boolean;
   const content = Code4i.getContent();
   const connection = Code4i.getConnection();
 
-  let funcInfo: FuncInfo = await whereisCustomFunc('SPOOLED_FILE_DATA');
-  // Check to see if function updated 
-  if (funcInfo.funcSysLib !== `ILEDITOR`) {
-    return connection.withTempDirectory(async tempDir => {
-      const tempSourcePath = posix.join(tempDir, `overrideSPOOLED_FILE_DATA_Funcition.sql`);
-
-      await content!.writeStreamfileRaw(tempSourcePath, getSource(`SPOOLED_FILE_DATA`, Code4i.getTempLibrary()));
-      const result = await connection.runCommand({
-        command: `RUNSQLSTM SRCSTMF('${tempSourcePath}') COMMIT(*NONE) NAMING(*SQL)`,
-        cwd: `/`,
-        noLibList: true
-      });
-
-      if (result.code === 0) {
-        lstate = true;
-      } else {
-        lstate =false;
-      }
-
-      return lstate;
-    });
+  if (sysFunction !== "SPOOLED_FILE_DATA") {
+    return false;
   }
-  return true; // Function installed in product library
+  else {
+    let funcInfo: FuncInfo = await whereisCustomFunc('SPOOLED_FILE_DATA');
+    // Check to see if function updated 
+    if (funcInfo.funcSysLib !== `ILEDITOR` && action === `add`) {
+      return connection.withTempDirectory(async tempDir => {
+        const tempSourcePath = posix.join(tempDir, `overrideSPOOLED_FILE_DATA_Funcition.sql`);
+
+        await content!.writeStreamfileRaw(tempSourcePath, getSource(`SPOOLED_FILE_DATA`, Code4i.getTempLibrary()));
+        const result = await connection.runCommand({
+          command: `RUNSQLSTM SRCSTMF('${tempSourcePath}') COMMIT(*NONE) NAMING(*SQL)`,
+          cwd: `/`,
+          noLibList: true
+        });
+
+        if (result.code === 0) {
+          lstate = true;
+        } else {
+          lstate = false;
+        }
+
+        return lstate;
+      });
+    }
+    else if (funcInfo.funcSysLib === `ILEDITOR` && action === `drop`) {
+      return connection.withTempDirectory(async tempDir => {
+        await Code4i.runSQL(`drop function if exists ${Code4i.getTempLibrary()}.SPOOLED_FILE_DATA`);
+        return true;
+      });
+    }
+    return true; // Function installed in product library
+  }
 }
 function getSource(func: string, library: string) {
   switch (func) {
   case `SPOOLED_FILE_DATA`:
-
+    if (library !== 'ILEDITOR') {return Buffer.from([``].join(`\n`), "utf8");}
     return Buffer.from([
       `--  Generate SQL `
       , `--  Original Version:           	V7R5M0 220415 `

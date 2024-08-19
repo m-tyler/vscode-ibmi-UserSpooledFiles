@@ -1,13 +1,17 @@
 # Change Log
 
-## Version 0.0.7
+## Version 0.0.8
   * Replaced SYS version of SPOOLED_FILE_DATA, added FOR MIXED DATA to script.
   * updated version of vscode-ibmi-types.
   * added refresh action and icon to top tree items.
-  * fixed linter issues.
-  * new functionality to create new replacement version of SPOOLED_FILE_DATA.
+  * new command to create new replacement version of SPOOLED_FILE_DATA into ILEDITOR library.
+  * new command to drop replacement version of SPOOLED_FILE_DATA from ILEDITOR library.
   * Fixed search box pop ups to change when searching one versus' ALL splfs.
-  * Allow code to stop when esc is pressed to dismiss action.
+  * Allow code to dismiss prompts and stop when esc is pressed for search command.
+
+## Version 0.0.7
+  * Add PR https://github.com/m-tyler/vscode-ibmi-UserSpooledFiles/pull/3 to replace depricated code and updated base types version
+
 ## Version 0.0.6
   * Added the refresh icon to each filter line
   * Download with line spacing in effect.
