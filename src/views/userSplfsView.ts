@@ -127,7 +127,7 @@ export class SpooledFileUser extends vscode.TreeItem {
   _description: string;
   description: string;
   filter: string; // reduces tree items to matching tokens
-  readonly sort: SortOptions = { order: "date", ascending: false };
+  readonly sort: SortOptions = { order: "date", ascending: true };
   constructor(parent: vscode.TreeItem, theUser: IBMiSplfUser, currentUser: string) {
     super(theUser.user, vscode.TreeItemCollapsibleState.Collapsed);
     this.user = theUser.user;
@@ -141,11 +141,12 @@ export class SpooledFileUser extends vscode.TreeItem {
 
     this._description = `${theUser.user} ${this.protected ? `(readonly)` : ``}`;
     this.description = this._description;
+    this.sortBy( this.sort );
 
     this.filter = '';
-    /** @type {import("../api/IBMiContent").SortOptions}*/
     this.tooltip = ``;
   }
+  /** @type {import("../api/IBMiContent").SortOptions}*/
   sortBy(sort: SortOptions) {
     if (this.sort.order !== sort.order) {
       this.sort.order = sort.order;
@@ -180,7 +181,7 @@ export class UserSpooledFiles extends vscode.TreeItem implements IBMiSpooledFile
   queue: string;
   protected: boolean;
   path: string;
-  readonly sort: SortOptions = { order: "name", ascending: true };
+  readonly sort: SortOptions = { order: "date", ascending: true };
   readonly sortBy: (sort: SortOptions) => void;
   /**
    * @param {"SPLF"} type

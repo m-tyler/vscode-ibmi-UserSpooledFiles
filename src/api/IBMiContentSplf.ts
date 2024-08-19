@@ -9,8 +9,6 @@ const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
 
 
-export type SortOrder = `name` | `type`;
-
 export type SortOptions = {
   order: "name" | "date" | "?"
   ascending?: boolean
@@ -18,11 +16,11 @@ export type SortOptions = {
 export namespace IBMiContentSplf {
   /**
   * @param {string} user 
-  * @param {string} sortOrder
+  * @param {string} SortOptions
   * @param {string=} splfName
   * @returns {Promise<IBMiSpooledFile[]>}
   */
-  export async function getUserSpooledFileFilter(user: string, sort: SortOptions = { order: "date" }, splfName?: string, searchWords?: string): Promise<IBMiSpooledFile[]> {
+  export async function getUserSpooledFileFilter(user: string, sort: SortOptions = { order: "date" ,ascending :true }, splfName?: string, searchWords?: string): Promise<IBMiSpooledFile[]> {
     const connection = Code4i.getConnection();
 
     sort.order = sort.order || { order: 'date' ,ascending:'asc'};
