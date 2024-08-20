@@ -18,8 +18,7 @@ Has support for:
 ---
 
 
-## TODOs:
-*  Allow for searches over all spooled files of user. 
+## TODOs: 
 *  Re-activate hover ability so user text and spooled file counts show again. 
 *  Re-write open with ling spacing to account for overprinted lines.  
 ---
