@@ -15,11 +15,12 @@ Has support for:
 *  Delete spooled files by user, specific line, specific name, all mathcing filter. 
 *  Move a spooled file to another output queue. 
 *  Download with line spacing in effect.
+* Tool tip hover for number of spooled files for user
+* Tool tip hover for spooled file to show extra attributes
 ---
 
 
 ## TODOs: 
-*  Re-activate hover ability so user text and spooled file counts show again. 
 *  Re-write open with ling spacing to account for overprinted lines.  
 ---
 

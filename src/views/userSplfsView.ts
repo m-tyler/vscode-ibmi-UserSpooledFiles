@@ -144,7 +144,6 @@ export class SpooledFileUser extends vscode.TreeItem {
     this.sortBy( this.sort );
 
     this.filter = '';
-    this.tooltip = ``;
   }
   /** @type {import("../api/IBMiContent").SortOptions}*/
   sortBy(sort: SortOptions) {

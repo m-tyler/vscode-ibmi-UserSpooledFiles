@@ -1,5 +1,8 @@
 # Change Log
 
+## Version 0.0.9
+  * Fixed bug that prevented the tool tip hover from appearing for user level items in the spooled file browser.
+  
 ## Version 0.0.8
   * Replaced SYS version of SPOOLED_FILE_DATA, added FOR MIXED DATA to script.
   * updated version of vscode-ibmi-types.

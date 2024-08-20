@@ -12,8 +12,7 @@ export async function activate(context: vscode.ExtensionContext) {
 	Code4i.initialize();
 		initializeSpooledFileBrowser(context);
 		await initializeSpooledFileSearchView(context);
-		
-		console.log('Congratulations, extension "vscode-ibmi-UserSpooledFiles "Version" :"0.0.7" is now active!');
+		console.log(`Congratulations, extension "vscode-ibmi-UserSpooledFiles "Version" :"${context.extension.packageJSON.version}" is now active!`);
 }
 
 // this method is called when your extension is deactivated
