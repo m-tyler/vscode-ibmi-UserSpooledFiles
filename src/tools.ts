@@ -12,7 +12,6 @@ let baseExtension: Extension<CodeForIBMi> | undefined;
 
 export namespace Code4i {
   export async function initialize() {
-    // const baseExtension = vscode.extensions.getExtension<CodeForIBMi>(`halcyontechltd.code-for-ibmi`);
     baseExtension = (extensions ? extensions.getExtension(`halcyontechltd.code-for-ibmi`) : undefined);
     if (baseExtension) {
       codeForIBMi = (baseExtension.isActive ? baseExtension.exports : await baseExtension.activate());

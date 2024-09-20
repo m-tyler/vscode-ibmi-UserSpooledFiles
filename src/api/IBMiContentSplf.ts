@@ -213,8 +213,8 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
     let line = lines[i];
     // The value for the skipToLine/spaceToLine values include the actual text line,
     //   reduce by one line because we always print the text
-    const skipToLine: number = line.substring(0, 3) === `   ` ? -1 : +line.substring(0, 3) - 1;
-    const spaceToLines: number = line.substring(3, 4) === ` ` ? -1 : +line.substring(3, 4) - 1;
+    const skipToLine: number = line.substring(0, 3) === `   ` ? -9 : +line.substring(0, 3) - 1;
+    const spaceToLines: number = line.substring(3, 4) === ` ` ? -9 : +line.substring(3, 4) - 1;
     line = line.substring(4);
     //     1. If skipTo is < lineCount then  
     //     -- newPageAction
@@ -226,7 +226,7 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
     //     if spaceTo > 0 then 
     //       1. print blank lines for spaceTo-1 quantity
     //    2. print text line
-    if (skipToLine > -1) {
+    if (skipToLine > -9) {
       if (skipToLine < lineCount) {
         // If we have just a few lines to go from last print line to end of page def
         // produce up to three additional blank lines before actual new page content.
@@ -246,6 +246,13 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
         }
       }
     }
+    else if (spaceToLines === -1) {
+      if (lineCount > 0) {
+        let newLine = newLines[newLines.length-1];
+        newLines[newLines.length-1] = overlayLine( newLine ,line);
+        continue;
+      }
+    }
     else if (spaceToLines > 0) {
       for (let l = 1; l <= spaceToLines; l++) { newLines.push(``); lineCount++; }
     }
@@ -257,4 +264,21 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
   results = newLines.join('\r\n');
 
   return results;
+}
+function overlayLine( line: string, newLine: string) :string {
+  const ll = line.length;
+  for (let c = 0; c < ll; c++) { 
+    // Match to any space character
+    let newLineSpaceChar :RegExpMatchArray | null = newLine.substring(c,c+1).match(/[ ]/i);
+    // Match to non-alphabet and space chars to replace
+    let lineMatchAlphaSpace :RegExpMatchArray | null = line.substring(c,c+1).match(/[a-z ]/i);
+    if (!newLineSpaceChar && !lineMatchAlphaSpace) {
+      line = setCharAt( line ,c ,newLine.substring(c,c+1));
+    }
+  }
+  return line;
+}
+function setCharAt(str :string ,index :number ,chr :string ) {
+  if(index > str.length-1) {return str;}
+  return str.substring(0,index) + chr + str.substring(index+1);
 }

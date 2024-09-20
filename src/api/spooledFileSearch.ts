@@ -107,7 +107,7 @@ export namespace UserSplfSearch {
           // path: "/${user}/QEZJOBLOG/QPJOBLOG~D000D2034A~[USERPROFILE]~849412~1.splf" <- path should be like this
           // NOTE: Path issue with part names with underscores in them.  Need a different job separator token or can we use more sub parts to the path??
           return parseGrepOutput(result.stdout || '', filter,
-            path => connection.sysNameInLocal(path)); // TODO: add the scheme context of spooledfile_readonly: to path
+            path => connection.sysNameInLocal(path)); 
         }
         else {
           throw new Error(result.stderr);

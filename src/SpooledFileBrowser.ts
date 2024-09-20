@@ -75,7 +75,6 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
             config.usersSpooledFile = usersSpooledFile;
             getInstance()!.setConfig(config);
             vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.sortUserSpooledFileFilter`, node);
-            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
           }
         }
       } catch (e) {
@@ -111,7 +110,6 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
                   config.usersSpooledFile = usersSpooledFile;
                   getInstance()!.setConfig(config);
                   vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
-                  // splfBrowserObj.refresh( node );
                 }
               }
             });
@@ -138,7 +136,6 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         config.usersSpooledFile = usersSpooledFile;
         getInstance()!.setConfig(config);
         vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
-        // splfBrowserObj.refresh();
       } catch (e) {
         // console.log(e);
       }

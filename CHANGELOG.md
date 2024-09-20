@@ -1,5 +1,7 @@
 # Change Log
 
+## Version 0.1.0
+  * Added code to overlay spooled file lines that are meant to overprint. 
 ## Version 0.0.9
   * Fixed bug that prevented the tool tip hover from appearing for user level items in the spooled file browser.
   
