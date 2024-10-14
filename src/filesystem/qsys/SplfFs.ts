@@ -1,6 +1,6 @@
 import { stringify, parse, ParsedUrlQueryInput, ParsedUrlQuery } from "querystring";
 import vscode, { FilePermission, l10n } from "vscode";
-import { Code4i,  } from "../../tools";
+import { Code4i, } from "../../tools";
 import { IBMiSpooledFile, SplfOpenOptions } from "../../typings";
 import { IBMiContentSplf } from "../../api/IBMiContentSplf";
 import fs from 'fs';
@@ -48,9 +48,9 @@ export class SplfFS implements vscode.FileSystemProvider {
 
     context.subscriptions.push(
       // vscode.workspace.onDidChangeConfiguration(async event => {
-        // if (event.affectsConfiguration(`code-for-ibmi.connectionSettings`)) {
-        //   this.updateSpooledFileSupport();
-        // }
+      // if (event.affectsConfiguration(`code-for-ibmi.connectionSettings`)) {
+      //   this.updateSpooledFileSupport();
+      // }
       // })
     );
 
@@ -75,7 +75,7 @@ export class SplfFS implements vscode.FileSystemProvider {
       size: 0,
       type: vscode.FileType.File,
       permissions: getFilePermission(uri)
-    }
+    };
   }
 
   async readFile(uri: vscode.Uri): Promise<Uint8Array> {
@@ -89,7 +89,7 @@ export class SplfFS implements vscode.FileSystemProvider {
       const qualifiedJobName = lfilename[3] + '/' + lfilename[2] + '/' + lfilename[1];
       const splfNumber = lfilename[4].replace(`.splf`, ``);
       const name = lfilename[0];
-      const options:ParsedUrlQuery = parse(uri.query);
+      const options: ParsedUrlQuery = parse(uri.query);
 
       const spooledFileContent = await IBMiContentSplf.downloadSpooledFileContent(uri.path, name, qualifiedJobName, splfNumber, `txt`, options);
       if (spooledFileContent !== undefined) {
@@ -113,11 +113,9 @@ export class SplfFS implements vscode.FileSystemProvider {
       if (process.platform === `win32`) {
         //Issue with getFile not working propertly on Windows
         //when there was a / at the start.
-        if (localPath[0] === `/`) localPath = localPath.substring(1);
+        if (localPath[0] === `/`) { localPath = localPath.substring(1); }
       }
       try {
-        // let fileEncoding = `utf8`;
-        // await writeFileAsync(localPath, content, fileEncoding);
         await writeFileAsync(localPath, content);
         vscode.window.showInformationMessage(`Spooled File, ${uri}, was saved.`);
       } catch (e) {

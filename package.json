@@ -143,6 +143,11 @@
           "group": "inline@3"
         },
         {
+          "command": "vscode-ibmi-splfbrowser.deleteSpooledFile",
+          "when": "view == splfBrowser && viewItem =~ /^spooledfile.*$/",
+          "group": "inline@4"
+        },
+        {
           "command": "vscode-ibmi-splfbrowser.filterSpooledFiles",
           "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
           "group": "4_splfuser@1"
@@ -298,7 +303,7 @@
         "title": "Delete all spooled files",
         "category": "IBM i SPLF",
         "enablement": "code-for-ibmi:connected == true",
-        "icon": "$(delete)"
+        "icon": "$(trash)"
       },
       {
         "command": "vscode-ibmi-splfbrowser.sortUserSpooledFileFilter",
@@ -311,19 +316,19 @@
         "command": "vscode-ibmi-splfbrowser.deleteSpooledFile",
         "title": "Delete SELECTED spooled file",
         "enablement": "code-for-ibmi:connected",
-        "icon": "$(delete)"
+        "icon": "$(trash)"
       },
       {
         "command": "vscode-ibmi-splfbrowser.deleteNamedSpooledFiles",
         "title": "Delete like NAMED spooled files",
         "enablement": "code-for-ibmi:connected",
-        "icon": "$(delete)"
+        "icon": "$(trash)"
       },
       {
         "command": "vscode-ibmi-splfbrowser.deleteFilteredSpooledFiles",
         "title": "Delete like FILTERED spooled files",
         "enablement": "code-for-ibmi:connected",
-        "icon": "$(delete)"
+        "icon": "$(trash)"
       },
       {
         "command": "vscode-ibmi-splfbrowser.moveSpooledFile",

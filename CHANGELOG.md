@@ -1,5 +1,7 @@
 # Change Log
 
+## Version 0.1.1
+  * Added command to delete spooled file item with inline trash icon
 ## Version 0.1.0
   * Added code to overlay spooled file lines that are meant to overprint. 
 ## Version 0.0.9

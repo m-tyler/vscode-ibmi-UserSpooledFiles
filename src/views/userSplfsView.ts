@@ -9,8 +9,9 @@ import { IBMiSplfUser, IBMiSpooledFile } from '../typings';
 
 //https://code.visualstudio.com/api/references/icons-in-labels
 const objectIcons: Record<string, string> = {
-  'OUTQ': 'server',
-  'SPLF': 'file',
+  'outq': 'server',
+  'splf': 'file',
+  // eslint-disable-next-line @typescript-eslint/naming-convention
   '': 'circle-large-outline'
 };
 
@@ -56,21 +57,21 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
           try {
             const objects = await IBMiContentSplf.getUserSpooledFileFilter(element.user, element.sort, undefined, element.filter);
             items.push(...objects
-              .map((object: IBMiSpooledFile) => new UserSpooledFiles(`SPLF`, element, object)));
+              .map((object: IBMiSpooledFile) => new UserSpooledFiles(`splf`, element, object)));
 
           } catch (e: any) {
             // console.log(e);
             vscode.window.showErrorMessage(e.message);
             items.push(new vscode.TreeItem(l10n.t(`Error loading user spooled files.`)));
           }
-        case `SPLF`:
+        case `splf`:
           { }
           break;
         }
 
       } else if (config.usersSpooledFile) { // no context exists in tree yet, get from settings if present
         items.push(...config.usersSpooledFile.map(
-          (theUser: any) => new SpooledFileUser(element, { user: theUser, }, connection.currentUser)
+          (theUser: any) => new SpooledFileUser('outq', element, { user: theUser, }, connection.currentUser)
         ));
       }
     }
@@ -128,10 +129,10 @@ export class SpooledFileUser extends vscode.TreeItem {
   description: string;
   filter: string; // reduces tree items to matching tokens
   readonly sort: SortOptions = { order: "date", ascending: true };
-  constructor(parent: vscode.TreeItem, theUser: IBMiSplfUser, currentUser: string) {
+  constructor(type: string, parent: vscode.TreeItem, theUser: IBMiSplfUser, currentUser: string) {
     super(theUser.user, vscode.TreeItemCollapsibleState.Collapsed);
     this.user = theUser.user;
-    const icon = objectIcons[`OUTQ`] || objectIcons[``];
+    const icon = objectIcons[`${type}`] || objectIcons[``];
     this.protected = this.user.toLocaleUpperCase() !== currentUser.toLocaleUpperCase() ? true : false;
     this.contextValue = `splfuser${this.protected ? `_readonly` : ``}`;
     this.path = theUser.user;
@@ -183,7 +184,7 @@ export class UserSpooledFiles extends vscode.TreeItem implements IBMiSpooledFile
   readonly sort: SortOptions = { order: "date", ascending: true };
   readonly sortBy: (sort: SortOptions) => void;
   /**
-   * @param {"SPLF"} type
+   * @param {"splf"} type
    * @param {vscode.TreeItem} parent
    * @param {IBMiSpooledFile} object
    * @param {IBMiSplfUser} filter
