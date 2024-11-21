@@ -1,9 +1,10 @@
-import  { TreeDataProvider } from "vscode";
-import  { Range } from "vscode";
+import { TreeDataProvider } from "vscode";
+import { Range } from "vscode";
 import * as vscode from 'vscode';
 import path from 'path';
-import { QsysFsOptions } from '@halcyontech/vscode-ibmi-types/';
+import { QsysFsOptions, SearchHit } from '@halcyontech/vscode-ibmi-types/';
 import { UserSplfSearch } from '../api/spooledFileSearch';
+import { getUriFromPath_Splf } from "../filesystem/qsys/SplfFs";
 export type OpenEditableOptions = QsysFsOptions & { position?: Range };
 
 export class UserSplfSearchView implements TreeDataProvider<any> {
@@ -34,7 +35,7 @@ export class UserSplfSearchView implements TreeDataProvider<any> {
     vscode.commands.executeCommand(`setContext`, `vscode-ibmi-splfbrowser:searchViewVisible`, visible);
   }
 
-  setResults(actionCommand :string, term: string, results: UserSplfSearch.Result[]) {
+  setResults(actionCommand: string, term: string, results: UserSplfSearch.Result[]) {
     this._actionCommand = actionCommand;
     this._term = term;
     this._results = results;
@@ -78,7 +79,7 @@ export class UserSplfSearchView implements TreeDataProvider<any> {
 class HitCommand extends vscode.TreeItem {
   private readonly _actionCommand: string;
 
-  constructor(actionCommand :string, readonly results: UserSplfSearch.Result[], readonly term: string) {
+  constructor(actionCommand: string, readonly results: UserSplfSearch.Result[], readonly term: string) {
     super(actionCommand, vscode.TreeItemCollapsibleState.Expanded);
 
     this.contextValue = `hitCommand`;
@@ -87,8 +88,8 @@ class HitCommand extends vscode.TreeItem {
     this._actionCommand = actionCommand;
   }
 
-  async getChildren(): Promise<HitSource[]> { 
-      return this.results.map(result => new HitSource(result, this.term));
+  async getChildren(): Promise<HitSource[]> {
+    return this.results.map(result => new HitSource(result, this.term));
   }
 }
 
@@ -109,15 +110,15 @@ class HitSource extends vscode.TreeItem {
   }
 
   async getChildren(): Promise<LineHit[]> {
-   
+
     return this.result.lines.map(line => new LineHit(this.term, this._path, line, this._readonly));
   }
 }
 class LineHit extends vscode.TreeItem {
   constructor(term: string, readonly path: string, line: UserSplfSearch.Line, readonly?: boolean) {
-    const highlights: [number, number][] = [];
+    let highlights: [number, number][] = [];
 
-    const upperContent = line.content.trim().toUpperCase();
+    const upperContent = line.content.toUpperCase();
     const upperTerm = term.toUpperCase();
     const openOptions: OpenEditableOptions = { readonly };
     let index = 0;
@@ -128,16 +129,20 @@ class LineHit extends vscode.TreeItem {
       while (index >= 0) {
         index = upperContent.indexOf(upperTerm, index);
         if (index >= 0) {
-          highlights.push([index, index + term.length]);
           if (!openOptions.position) {
-            openOptions.position = new vscode.Range(positionLine, index, positionLine, index + term.length);
+            openOptions.position = new vscode.Range(positionLine, index-1, positionLine, index-1 +term.length);
           }
           index += term.length;
         }
       }
     }
-
+    highlights = computeHighlights(upperTerm ,upperContent.trim());
+    // let firstThirtyChars = line.content.substring(0 ,30);
+    // if (line.content.length > 30) {
+    //   firstThirtyChars = `...`+line.content.substring(highlights[0][0]-15 ,30);
+    // }
     super({
+      // label: firstThirtyChars,
       label: line.content.trim(),
       highlights
     });
@@ -146,11 +151,27 @@ class LineHit extends vscode.TreeItem {
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
 
     this.description = String(line.number);
+    this.resourceUri = getUriFromPath_Splf(this.path, openOptions);
 
     this.command = {
-      command: `code-for-ibmi.openEditable`,
-      title: `Open`,
-      arguments: [this.path, openOptions]
+      command: `vscode.openWith`,
+      title: `Open Spooled File`,
+      arguments: [this.resourceUri,`default`, { selection: openOptions.position } as vscode.TextDocumentShowOptions]
     };
   }
+}
+/**
+ * Computes where to highlight the search result label text
+ */
+function computeHighlights (term: string, line: string) :[number, number][]{
+  let index = 0;
+  let HI :[number,number][] = [];
+  while (index >= 0) {
+    index = line.indexOf(term, index);
+    if (index >= 0) {
+      HI.push([index, index +term.length]);
+      index += term.length;
+    }
+  }
+  return HI;
 }

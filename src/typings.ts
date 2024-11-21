@@ -1,5 +1,4 @@
-import { QsysFsOptions } from "@halcyontech/vscode-ibmi-types"
-import { Range } from "vscode"
+import { Range } from "vscode";
 
 export interface IBMiSpooledFile {
   user: string
@@ -22,6 +21,10 @@ export interface IBMiSpooledFile {
 export interface IBMiSplfUser {
   user: string
   text?: string
+}  
+export interface IBMiSplfCounts {
+  numberOf: string
+  totalPages: string
 }  
 
 export type SplfDefaultOpenMode = "withSpaces" | "withoutSpaces";

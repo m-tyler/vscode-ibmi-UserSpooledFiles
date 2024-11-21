@@ -2,7 +2,7 @@ import fs from 'fs';
 import tmp from 'tmp';
 import util from 'util';
 import { Code4i, makeid } from '../tools';
-import { IBMiSpooledFile, SplfOpenOptions } from '../typings';
+import { IBMiSpooledFile, SplfOpenOptions,IBMiSplfCounts } from '../typings';
 import { CommandResult } from '@halcyontech/vscode-ibmi-types';
 const tmpFile = util.promisify(tmp.file);
 const readFileAsync = util.promisify(fs.readFile);
@@ -161,21 +161,21 @@ export namespace IBMiContentSplf {
   * @param {string=} splfName
   * @returns {Promise<String>} a string with the count of spooled file for user
   */
-  export async function getUserSpooledFileCount(user: string, splfName?: string, searchWord?: string): Promise<string> {
+  export async function getUserSpooledFileCount(user: string, splfName?: string, searchWord?: string): Promise<IBMiSplfCounts> {
     user = user.toUpperCase();
 
     // let results: Tools.DB2Row[];
 
-    const objQuery = `select count(*) USER_SPLF_COUNT
+    const objQuery = `select count(*) USER_SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
     from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => '${user}') ) SPE 
     where FILE_AVAILABLE = '*FILEEND' ${splfName ? `and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""} 
     group by SPE.JOB_USER` ;
     let results = await Code4i!.runSQL(objQuery);
     if (results.length === 0) {
-      return ` ${user} user has no spooled files`;
+      return {numberOf :` ${user} user has no spooled files`, totalPages:``};
     }
     // const resultSet = await Code4i!.runSQL(`SELECT * FROM QSYS2.ASP_INFO`);
-    return String(results[0].USER_SPLF_COUNT);
+    return {numberOf :String(results[0].USER_SPLF_COUNT), totalPages:String(results[0].TOTAL_PAGES)};
   }
   /**
   * @param {string} user

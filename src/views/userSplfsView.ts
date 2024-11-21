@@ -115,7 +115,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
     const userText = await IBMiContentSplf.getUserProfileText(item.user);
     item.tooltip = ``
       .concat(userText ? l10n.t(`User Text\t\t\t:  {0}`, userText) : ``)
-      .concat(userText ? l10n.t(`\nSpooled Fiile Count: {0}`, splfNum) : ``);
+      .concat(userText ? l10n.t(`\nSpooled Fiile Count: {0}`, splfNum.numberOf) : ``);
     return item;
   }
 }
@@ -158,6 +158,8 @@ export class SpooledFileUser extends vscode.TreeItem {
     this.description = `${this._description ? `${this._description} ` : ``}(sort: ${this.sort.order} ${this.sort.ascending ? `🔼` : `🔽`})`;
   }
   setFilter(filter: string) { this.filter = filter; }
+  clearToolTip() { this.tooltip = undefined; }
+  // setDescription(value: string | boolean) { this.description = (value?value:``)+this.sortDescription; }
 }
 
 export class UserSpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {

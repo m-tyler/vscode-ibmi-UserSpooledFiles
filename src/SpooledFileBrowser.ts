@@ -413,9 +413,11 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
             if (Number(splfnum) > 0) {
               if (node.contextValue === `spooledfile`) {
                 node.parent.setFilter(searchTerm);
+                node.parent.clearToolTip();
                 vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node.parent);
               } else {
                 node.setFilter(searchTerm);
+                node.clearToolTip();
                 vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
               }
             } else {

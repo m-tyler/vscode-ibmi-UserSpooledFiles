@@ -82,11 +82,6 @@
           "group": "navigation@1"
         },
         {
-          "command": "vscode-ibmi-splfbrowser.expandSearchView",
-          "when": "view == UserSplfSearchView",
-          "group": "navigation@1"
-        },
-        {
           "command": "vscode-ibmi-splfbrowser.refreshSPLFBrowser",
           "group": "navigation@1",
           "when": "view == splfBrowser"

@@ -4,3 +4,8 @@
     DONE: Allow for searches over all spooled files of user.  Need to figure out how to make SQL tool,SYSTOOLS.SPOOLED_FILE_DATA , to read any spooled file with plan text but coded with `DBCS data = *YES` fail to open.  User needs a result table with DBCS capable CCSID but the SQL tool does not allow for this. 
     DONE: Download with line spacing in effect.
     DONE: re-activate hover ability so user text and spooled file counts show again.  That feature disappeared when I separated this project from a fork of the base Code for i project.
+    
+    DONE: Add number of pages to quantity effort message that appears while searching.
+    
+        
+    TODO: Multi-spooled file selections for all actions.

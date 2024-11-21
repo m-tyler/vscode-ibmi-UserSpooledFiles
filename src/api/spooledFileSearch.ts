@@ -91,7 +91,7 @@ export namespace UserSplfSearch {
         select SFUSER,OUTQ,QJOB,SFILE,SFNUMBER,SPOOLED_DATA,SD.ORDINAL_POSITION
           from ${tempLib}.${tempName}
           ,table (${funcInfo.funcSysLib}.SPOOLED_FILE_DATA(trim(QJOB),SFILE,SFNUMBER,'NO')) SD )
-    select trim(SFUSER)||'/'||trim(OUTQ)||'/'||trim(SFILE)||'~'||trim(regexp_replace(QJOB,'(\\w*)/(\\w*)/(\\w*)','$3~$2~$1'))||'~'||trim(SFNUMBER)||'.splf'||':'||char(ORDINAL_POSITION)||':'||varchar(trim(SPOOL_DATA),132) SEARCH_RESULT
+    select trim(SFUSER)||'/'||trim(OUTQ)||'/'||trim(SFILE)||'~'||trim(regexp_replace(QJOB,'(\\w*)/(\\w*)/(\\w*)','$3~$2~$1'))||'~'||trim(SFNUMBER)||'.splf'||':'||varchar(ORDINAL_POSITION)||':'||varchar(SPOOL_DATA,378) SEARCH_RESULT
       from ALL_USER_SPOOLED_FILE_DATA AMD
       where upper(SPOOL_DATA) like upper('%${sanitizeSearchTerm(searchTerm)}%');`
           ;

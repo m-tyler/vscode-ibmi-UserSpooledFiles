@@ -3,7 +3,7 @@ import { IBMiContentSplf } from "./api/IBMiContentSplf";
 import { UserSplfSearch } from './api/spooledFileSearch';
 import { Code4i, getInstance, checkSystemFuntionState } from "./tools";
 import { UserSplfSearchView } from './views/userSplfsSearchView';
-// import setSearchResults from "@halcyontech/vscode-ibmi-types/instantiate";
+import { IBMiSplfCounts } from './typings';
 
 interface SearchParms {
   user: any,
@@ -16,9 +16,9 @@ interface SearchParms {
 let userSplfSearchViewProvider = <UserSplfSearchView>{};
 export async function initializeSpooledFileSearchView(context: vscode.ExtensionContext) {
   userSplfSearchViewProvider = new UserSplfSearchView(context);
-  let search = <SearchParms>{};
   context.subscriptions.push(
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.searchSpooledFiles`, async (node) => {
+      let search = <SearchParms>{};
       //Initiate search from Spooled file item
       if (node && (/^spooledfile/.test(node.contextValue))) {
         search.user = node.user;
@@ -38,6 +38,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
       }
       if (!search.name) {
         search.name = await vscode.window.showInputBox({
+          placeHolder:`*ALL`,
           value: ``,
           prompt: l10n.t(`Enter spooled file name to search over, or blank for *ALL`),
           title: l10n.t(`Search in named spooled file`),
@@ -65,17 +66,19 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
             progress.report({
               message: l10n.t(`'{0}' in {1}, {2} spooled files.`, search.term, search.user, search.name)
             });
-            const splfnum = await IBMiContentSplf.getUserSpooledFileCount(search.user, search.name);
-            if (Number(splfnum) > 0) {
+            let splf :IBMiSplfCounts; 
+            splf = await IBMiContentSplf.getUserSpooledFileCount(search.user, search.name);
+            if (Number(splf.numberOf) > 0) {
               // NOTE: if more messages are added, lower the timeout interval
               const timeoutInternal = 9000;
               const searchMessages = [
                 l10n.t(`'{0}' in {1} spooled files.`, search.term, search.name),
-                l10n.t(`This is taking a while because there are {0} spooled files. Searching '{1}' in {2} still.`, splfnum, search.term, search.user),
+                l10n.t(`This is taking a while because there are {0} spooled files with a total page count of {1}. Searching '{2}' in {3} still.`, splf.numberOf, splf.totalPages, search.term, search.user),
                 l10n.t(`What's so special about '{0}' anyway?`, search.term),
                 l10n.t(`Still searching '{0}' in {1}...`, search.term, search.user),
                 l10n.t(`Wow. This really is taking a while. Let's hope you get the result you want.`),
-                l10n.t(`How does one end up with {0} spooled files.  Ever heard of cleaning up?`, splfnum),
+                l10n.t(`Did you know that I'm searching through {0} pages of spooled file data?  This might take a little bit.`, splf.totalPages),
+                l10n.t(`How does one end up with {0} spooled files.  Ever heard of cleaning up?`, splf.numberOf),
                 l10n.t(`'{0}' in {1}.`, search.term, search.user),
               ];
               let currentMessage = 0;

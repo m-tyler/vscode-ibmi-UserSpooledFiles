@@ -1,5 +1,11 @@
 # Change Log
 
+## Version 0.1.2
+  * Show user amount of work during spooled file search
+  * Clear tool tip at refresh state so spooled file quantity is updated
+  * Fixed token highlight on search results tree
+  * Fixed token highlight in opened editor after selection from search view
+
 ## Version 0.1.1
   * Added command to delete spooled file item with inline trash icon
 ## Version 0.1.0
@@ -13,11 +19,11 @@
   * added refresh action and icon to top tree items.
   * new command to create new replacement version of SPOOLED_FILE_DATA into ILEDITOR library.
   * new command to drop replacement version of SPOOLED_FILE_DATA from ILEDITOR library.
-  * Fixed search box pop ups to change when searching one versus' ALL splfs.
+  * Fixed search box pop ups to change when searching one versus' ALL spooled files.
   * Allow code to dismiss prompts and stop when esc is pressed for search command.
 
 ## Version 0.0.7
-  * Add PR https://github.com/m-tyler/vscode-ibmi-UserSpooledFiles/pull/3 to replace depricated code and updated base types version
+  * Add PR https://github.com/m-tyler/vscode-ibmi-UserSpooledFiles/pull/3 to replace deprecated code and updated base types version
 
 ## Version 0.0.6
   * Added the refresh icon to each filter line
