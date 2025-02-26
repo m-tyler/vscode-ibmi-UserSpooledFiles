@@ -76,7 +76,10 @@ export function nthIndex(aString: string, pattern: string, n: number) {
   }
   return index;
 }
-export async function whereisCustomFunc(funcName: string): Promise<FuncInfo> {
+export async function checkObject(library: string, name: string, type: string) {
+  return await Code4i.getContent().checkObject({ library, name, type });
+};
+export async function whereIsCustomFunc(funcName: string): Promise<FuncInfo> {
   // Look for the custom function somewhere
   let currentUser = '';
   const connection = Code4i.getConnection();
@@ -95,7 +98,7 @@ export async function whereisCustomFunc(funcName: string): Promise<FuncInfo> {
   };
 }
 
-export async function checkSystemFuntionState(sysFunction: string, action: string): Promise<boolean> {
+export async function checkSystemFunctionState(sysFunction: string, action: string): Promise<boolean> {
 
   let lstate: boolean;
   const content = Code4i.getContent();
@@ -105,7 +108,7 @@ export async function checkSystemFuntionState(sysFunction: string, action: strin
     return false;
   }
   else {
-    let funcInfo: FuncInfo = await whereisCustomFunc('SPOOLED_FILE_DATA');
+    let funcInfo: FuncInfo = await whereIsCustomFunc('SPOOLED_FILE_DATA');
     // Check to see if function updated 
     if (funcInfo.funcSysLib !== `ILEDITOR` && action === `add`) {
       return connection.withTempDirectory(async tempDir => {

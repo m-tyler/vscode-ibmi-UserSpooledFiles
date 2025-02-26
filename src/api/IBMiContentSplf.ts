@@ -20,23 +20,30 @@ export namespace IBMiContentSplf {
   * @param {string=} splfName
   * @returns {Promise<IBMiSpooledFile[]>}
   */
-  export async function getUserSpooledFileFilter(user: string, sort: SortOptions = { order: "date" ,ascending :true }, splfName?: string, searchWords?: string): Promise<IBMiSpooledFile[]> {
+  export async function getUserSpooledFileFilter(user: string
+                                      , sort: SortOptions = { order: "date" ,ascending :true }
+                                      , splfName?: string
+                                      , searchWords?: string
+                                      , resultLimit?: number
+                                    ): Promise<IBMiSpooledFile[]> {
     const connection = Code4i.getConnection();
 
     sort.order = sort.order || { order: 'date' ,ascending:'asc'};
+    resultLimit = resultLimit||10000;
     user = user.toUpperCase();
 
     var objQuery;
     // let results: Tools.DB2Row[];
 
-    objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP, SPE.USER_DATA, SPE.SIZE, SPE.TOTAL_PAGES, SPE.QUALIFIED_JOB_NAME, SPE.JOB_NAME, SPE.JOB_USER, SPE.JOB_NUMBER, SPE.FORM_TYPE, SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE, QE.PAGE_LENGTH from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => ucase('${user}')) ) SPE left join TABLE(QSYS2.OUTPUT_QUEUE_ENTRIES( SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE,  DETAILED_INFO => 'YES')) QE on QE.SPOOLED_FILE_NAME = SPE.SPOOLED_FILE_NAME and QE.JOB_NAME = SPE.QUALIFIED_JOB_NAME and QE.FILE_NUMBER = SPE.SPOOLED_FILE_NUMBER where SPE.FILE_AVAILABLE = '*FILEEND' ${splfName ? ` and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""}
-    order by ${sort.order === 'name' ? 'SPE.SPOOLED_FILE_NAME' : 'SPE.CREATION_TIMESTAMP'} ${!sort.ascending ? 'desc' : 'asc'}`;
+    objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP, SPE.USER_DATA, SPE.SIZE, SPE.TOTAL_PAGES, SPE.QUALIFIED_JOB_NAME, SPE.JOB_NAME, SPE.JOB_USER, SPE.JOB_NUMBER, SPE.FORM_TYPE, SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE
+    from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => ucase('${user}')) ) SPE where SPE.FILE_AVAILABLE = '*FILEEND' ${splfName ? ` and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""}
+    order by ${sort.order === 'name' ? 'SPE.SPOOLED_FILE_NAME' : 'SPE.CREATION_TIMESTAMP'} ${!sort.ascending ? 'desc' : 'asc'} limit ${resultLimit}`;
     let results = await Code4i!.runSQL(objQuery);
 
     if (results.length === 0) {
       return [];
     }
-    results = results.sort((a, b) => String(a.MBSPOOLED_FILE_NAMENAME).localeCompare(String(b.SPOOLED_FILE_NAME)));
+    // results = results.sort((a, b) => String(a.MBSPOOLED_FILE_NAMENAME).localeCompare(String(b.SPOOLED_FILE_NAME)));
 
     let searchWords_ = searchWords?.split(' ') || [];
 
@@ -51,7 +58,7 @@ export namespace IBMiContentSplf {
         userData: connection.sysNameInLocal(String(object.USER_DATA)),
         size: Number(object.SIZE),
         totalPages: Number(object.TOTAL_PAGES),
-        pageLength: Number(object.PAGE_LENGTH),
+        pageLength: Number(0),
         qualifiedJobName: connection.sysNameInLocal(String(object.QUALIFIED_JOB_NAME)),
         jobName: connection.sysNameInLocal(String(object.JOB_NAME)),
         jobUser: connection.sysNameInLocal(String(object.JOB_USER)),
@@ -157,26 +164,43 @@ export namespace IBMiContentSplf {
 
   }
   /**
-  * @param {string} user
-  * @param {string=} splfName
-  * @returns {Promise<String>} a string with the count of spooled file for user
   */
-  export async function getUserSpooledFileCount(user: string, splfName?: string, searchWord?: string): Promise<IBMiSplfCounts> {
+  export async function getSpooledPageLength(user: string, splfName: string, qualifiedJobName: string, splfNum: string, queue:string, queueLibrary :string): Promise<string> {
     user = user.toUpperCase();
 
     // let results: Tools.DB2Row[];
 
-    const objQuery = `select count(*) USER_SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
-    from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => '${user}') ) SPE 
-    where FILE_AVAILABLE = '*FILEEND' ${splfName ? `and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""} 
-    group by SPE.JOB_USER` ;
+    const objQuery = `select PAGE_LENGTH
+    from table (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '${queueLibrary}', OUTQ_NAME => '${queue}', DETAILED_INFO => 'YES') ) QE 
+    where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}'  and QE.FILE_NUMBER = ${splfNum}` ;
     let results = await Code4i!.runSQL(objQuery);
     if (results.length === 0) {
-      return {numberOf :` ${user} user has no spooled files`, totalPages:``};
+      return ` Spooled file ${splfName} in job ${qualifiedJobName} report number ${splfNum} was not found.`;
     }
     // const resultSet = await Code4i!.runSQL(`SELECT * FROM QSYS2.ASP_INFO`);
-    return {numberOf :String(results[0].USER_SPLF_COUNT), totalPages:String(results[0].TOTAL_PAGES)};
+    return String(results[0].PAGE_LENGTH);
   }
+  /**
+  * @param {string} user
+  * @param {string=} splfName
+  * @returns {Promise<String>} a string with the count of spooled file for user
+  */
+    export async function getUserSpooledFileCount(user: string, splfName?: string, searchWord?: string): Promise<IBMiSplfCounts> {
+      user = user.toUpperCase();
+  
+      // let results: Tools.DB2Row[];
+  
+      const objQuery = `select count(*) USER_SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
+      from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => '${user}') ) SPE 
+      where FILE_AVAILABLE = '*FILEEND' ${splfName ? `and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""} 
+      group by SPE.JOB_USER` ;
+      let results = await Code4i!.runSQL(objQuery);
+      if (results.length === 0) {
+        return {numberOf :` ${user} user has no spooled files`, totalPages:``};
+      }
+      // const resultSet = await Code4i!.runSQL(`SELECT * FROM QSYS2.ASP_INFO`);
+      return {numberOf :String(results[0].USER_SPLF_COUNT), totalPages:String(results[0].TOTAL_PAGES)};
+    }
   /**
   * @param {string} user
   * @returns a promised string for user profile text 
@@ -239,7 +263,7 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
         pageCount++;
       } else {
         if (skipToLine >= lineCount) {
-          // Somethimes when reports have more than 3 blank lines the system 
+          // Sometimes when reports have more than 3 blank lines the system 
           // does a skipTo line value instead of a space to in the middle of a report page
           // so this acts like a large spaceTo value. 
           for (let l = lineCount; l < skipToLine; l++) { newLines.push(``); lineCount++; }

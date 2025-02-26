@@ -1,5 +1,11 @@
 # Change Log
 
+## Version 0.1.3
+  * Fix some entry refresh issues
+  * Improved spooled file list performance
+  * Limit quantity of spooled files returned to 10000 by default. Not limiting causes loading issues where tree fails to partially load.
+  * Minor code clean up
+
 ## Version 0.1.2
   * Show user amount of work during spooled file search
   * Clear tool tip at refresh state so spooled file quantity is updated

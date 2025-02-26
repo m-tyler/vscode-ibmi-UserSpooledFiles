@@ -3,7 +3,7 @@ import util from "util";
 import fs from "fs";
 import tmp from "tmp";
 import { CommandResult } from "@halcyontech/vscode-ibmi-types";
-import { Code4i, makeid, whereisCustomFunc} from "../tools";
+import { Code4i, makeid, whereIsCustomFunc} from "../tools";
 import { isProtectedFilter } from '../filesystem/qsys/SplfFs';
 import { IBMiContentSplf } from "../api/IBMiContentSplf";
 import { FuncInfo } from '../typings';
@@ -85,7 +85,7 @@ export namespace UserSplfSearch {
           , environment: `ile`
         });
         // on-server list of spooled files to search is built, now use in conjunction with searching that list of report data
-        let funcInfo: FuncInfo = await whereisCustomFunc('SPOOLED_FILE_DATA');
+        let funcInfo: FuncInfo = await whereIsCustomFunc('SPOOLED_FILE_DATA');
         const sqlStatement =
           `with ALL_USER_SPOOLED_FILE_DATA (SFUSER,OUTQ,QJOB,SFILE,SFNUMBER,SPOOL_DATA,ORDINAL_POSITION) as (
         select SFUSER,OUTQ,QJOB,SFILE,SFNUMBER,SPOOLED_DATA,SD.ORDINAL_POSITION

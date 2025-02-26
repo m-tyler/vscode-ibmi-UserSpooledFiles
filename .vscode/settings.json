@@ -13,6 +13,8 @@
     "autoHide.hideSideBarsOnDebug": false,
     "autoHide.hidePanelOnDebug": false,
     "cSpell.enabledFileTypes": {
-        "markdown": true
+        "markdown": true,
+        "typescript": false,
+        "json": false
     }
 }

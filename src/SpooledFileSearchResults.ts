@@ -1,7 +1,7 @@
 import vscode, { l10n, } from 'vscode';
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
 import { UserSplfSearch } from './api/spooledFileSearch';
-import { Code4i, getInstance, checkSystemFuntionState } from "./tools";
+import { Code4i, getInstance, checkSystemFunctionState } from "./tools";
 import { UserSplfSearchView } from './views/userSplfsSearchView';
 import { IBMiSplfCounts } from './typings';
 
@@ -123,7 +123,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
 
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.dropUpdatedSPOOLED_FILE_DATA_TF`, async () => {
-      await checkSystemFuntionState( 'SPOOLED_FILE_DATA' , 'drop');
+      await checkSystemFunctionState( 'SPOOLED_FILE_DATA' , 'drop');
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.createUpdatedSPOOLED_FILE_DATA_TF`, async (node) => {
       let message = l10n.t(`Are you having troubles searching through spooled files?`);
@@ -135,7 +135,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
             vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`))
               .then(async result => {
                 if (result === l10n.t(`Yes`)) {
-                  await checkSystemFuntionState( 'SPOOLED_FILE_DATA' , 'add');
+                  await checkSystemFunctionState( 'SPOOLED_FILE_DATA' , 'add');
                 }
               });
           }

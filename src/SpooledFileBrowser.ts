@@ -50,7 +50,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.revealSPLFBrowser`, async (item: vscode.TreeItem, options?: FocusOptions) => {
       splfBrowserViewer.reveal(item, options);
     }),
-    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.addUserSpooledFileFilter`, async (node) => {
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.addUserSpooledFileFilter`, async () => {
       const config = getConfig();
       const connection = getConnection();
 
@@ -74,7 +74,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
             usersSpooledFile.push(newUserSplfs);
             config.usersSpooledFile = usersSpooledFile;
             getInstance()!.setConfig(config);
-            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.sortUserSpooledFileFilter`, node);
+            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.sortUserSpooledFileFilter`);
           }
         }
       } catch (e) {
@@ -109,7 +109,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
                   usersSpooledFile.splice(inx, 1);
                   config.usersSpooledFile = usersSpooledFile;
                   getInstance()!.setConfig(config);
-                  vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
+                  vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`);
                 }
               }
             });
@@ -503,6 +503,13 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       }
     }),
     vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfWithLineSpacing", async (node) => {
+      node.pageLength = await IBMiContentSplf.getSpooledPageLength( node.user
+                                                                    , node.name
+                                                                    , node.qualifiedJobName
+                                                                    , node.number 
+                                                                    , node.queue
+                                                                    , node.queueLibrary
+                                                                  );
       return vscode.commands.executeCommand("vscode-ibmi-splfbrowser.openSpooledFile", node, "withSpace" as SplfDefaultOpenMode);
     }),
     vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing", async (node) => {
