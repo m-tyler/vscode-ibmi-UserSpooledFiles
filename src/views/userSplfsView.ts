@@ -234,9 +234,9 @@ export class UserSpooledFiles extends vscode.TreeItem implements IBMiSpooledFile
       .concat(object.pageLength ? l10n.t(`\nPage Length:\t {0}`, object.pageLength) : ``)
       ;
     this.command = {
-      command: `vscode.open`,
+      command: `vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing`,
       title: `Open Spooled File`,
-      arguments: [this.resourceUri]
+      arguments: [this]
     };
     this.iconPath = new vscode.ThemeIcon(icon, (this.protected ? new vscode.ThemeColor(`list.errorForeground`) : undefined));
     this.sortBy = (sort: SortOptions) => parent.sortBy(sort);

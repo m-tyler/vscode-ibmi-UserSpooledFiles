@@ -1,11 +1,9 @@
-import { TreeDataProvider } from "vscode";
-import { Range } from "vscode";
 import * as vscode from 'vscode';
+import { TreeDataProvider } from "vscode";
 import path from 'path';
-import { QsysFsOptions, SearchHit } from '@halcyontech/vscode-ibmi-types/';
 import { UserSplfSearch } from '../api/spooledFileSearch';
-import { getUriFromPath_Splf } from "../filesystem/qsys/SplfFs";
-export type OpenEditableOptions = QsysFsOptions & { position?: Range };
+import { getUriFromPathSplf } from "../filesystem/qsys/SplfFs";
+import { SplfOpenOptions } from '../typings';
 
 export class UserSplfSearchView implements TreeDataProvider<any> {
   private _term = ``;
@@ -120,7 +118,7 @@ class LineHit extends vscode.TreeItem {
 
     const upperContent = line.content.toUpperCase();
     const upperTerm = term.toUpperCase();
-    const openOptions: OpenEditableOptions = { readonly };
+    let openOptions: SplfOpenOptions = { };
     let index = 0;
 
     // Calculate the highlights
@@ -146,18 +144,30 @@ class LineHit extends vscode.TreeItem {
       label: line.content.trim(),
       highlights
     });
+    openOptions = {
+      readonly: readonly || false,
+      openMode: "withoutSpaces",
+      position: openOptions?.position || undefined,
+      fileExtension: 'SPLF', 
+      saveToPath: undefined,
+      tempPath: undefined
+    };
+    this.resourceUri = getUriFromPathSplf(this.path, openOptions);
 
     this.contextValue = `lineHit`;
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
 
     this.description = String(line.number);
-    this.resourceUri = getUriFromPath_Splf(this.path, openOptions);
 
     this.command = {
+      // command: `vscode-ibmi-splfbrowser. openSplfWithoutLineSpacing`,
       command: `vscode.openWith`,
       title: `Open Spooled File`,
-      arguments: [this.resourceUri,`default`, { selection: openOptions.position } as vscode.TextDocumentShowOptions]
+      tooltip: `Open Spooled File`,
+      // arguments: [this.path, `default`,{ selection: openOptions.position } as vscode.TextDocumentShowOptions ]
+      arguments: [this.resourceUri, `default`,{ selection: openOptions.position } as vscode.TextDocumentShowOptions ]
     };
+    console.log(this);
   }
 }
 /**

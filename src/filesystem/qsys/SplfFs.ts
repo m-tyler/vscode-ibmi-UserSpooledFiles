@@ -12,7 +12,7 @@ const writeFileAsync = util.promisify(fs.writeFile);
 export function getSpooledFileUri(splf: IBMiSpooledFile, options?: SplfOpenOptions) {
   return getUriFromPath(`${splf.user}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.jobUser}~${splf.jobNumber}~${splf.number}.splf`, options);
 }
-export function getUriFromPath_Splf(path: string, options?: SplfOpenOptions) {
+export function getUriFromPathSplf(path: string, options?: SplfOpenOptions) {
   return getUriFromPath(path, options);
 }
 
@@ -41,32 +41,15 @@ export function isProtectedFilter(filter?: string): boolean {
 
 export class SplfFS implements vscode.FileSystemProvider {
 
-  private emitter = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
-  onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this.emitter.event;
+  private emitterChg = new vscode.EventEmitter<vscode.FileChangeEvent[]>();
+  onDidChangeFile: vscode.Event<vscode.FileChangeEvent[]> = this.emitterChg.event;
 
   constructor(context: vscode.ExtensionContext) {
 
     context.subscriptions.push(
-      // vscode.workspace.onDidChangeConfiguration(async event => {
-      // if (event.affectsConfiguration(`code-for-ibmi.connectionSettings`)) {
-      //   this.updateSpooledFileSupport();
-      // }
-      // })
     );
 
-    // getInstance()?.subscribe(context, `connected`, "Connection Setup" , () => this.updateSpooledFileSupport());
-    // getInstance()?.subscribe(context, `disconnected`, "Disconnect clean up" , () => this.updateSpooledFileSupport());
   }
-
-  // private updateSpooledFileSupport() {
-
-  //   const connection = Code4i.getConnection();
-  //   const config = connection?.config;
-
-  //   if (connection) {
-  //   }
-
-  // }
 
   stat(uri: vscode.Uri): vscode.FileStat {
     return {
@@ -89,9 +72,14 @@ export class SplfFS implements vscode.FileSystemProvider {
       const qualifiedJobName = lfilename[3] + '/' + lfilename[2] + '/' + lfilename[1];
       const splfNumber = lfilename[4].replace(`.splf`, ``);
       const name = lfilename[0];
-      const options: ParsedUrlQuery = parse(uri.query);
-
-      const spooledFileContent = await IBMiContentSplf.downloadSpooledFileContent(uri.path, name, qualifiedJobName, splfNumber, `txt`, options);
+      const queryStrings: ParsedUrlQuery = parse(uri.query);
+      const options: SplfOpenOptions = {
+        readonly: queryStrings.ReadOnly||`true` ? true: false,
+        openMode: "withoutSpaces",
+        fileExtension: `splf`,
+        saveToPath: os.tmpdir()
+      };
+      const spooledFileContent = await IBMiContentSplf.downloadSpooledFileContent(uri.path, name, qualifiedJobName, splfNumber, options);
       if (spooledFileContent !== undefined) {
         return new Uint8Array(Buffer.from(spooledFileContent, `utf8`));
       }

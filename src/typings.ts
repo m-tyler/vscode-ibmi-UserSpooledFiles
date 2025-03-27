@@ -32,8 +32,11 @@ export type SplfDefaultOpenMode = "withSpaces" | "withoutSpaces";
 export interface SplfOpenOptions {
   readonly?: boolean;
   openMode?: SplfDefaultOpenMode;
-  position?: Range;
+  position?: Range|undefined;
   pageLength?: number;
+  fileExtension?: string|undefined;
+  saveToPath?: string|undefined;
+  tempPath?: boolean|undefined;
 }
 
 export interface FuncInfo {

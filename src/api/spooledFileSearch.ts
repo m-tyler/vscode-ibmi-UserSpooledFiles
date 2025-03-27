@@ -95,7 +95,7 @@ export namespace UserSplfSearch {
       from ALL_USER_SPOOLED_FILE_DATA AMD
       where upper(SPOOL_DATA) like upper('%${sanitizeSearchTerm(searchTerm)}%');`
           ;
-        const rs = await Code4i!.runSQL(sqlStatement);
+        const rs = await Code4i.runSQL(sqlStatement);
         var resultString = rs.map(function (rsElem) { return rsElem.SEARCH_RESULT; }).join("\n");
         var result = {
           code: 0,

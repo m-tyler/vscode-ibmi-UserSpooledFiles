@@ -1,8 +1,8 @@
 {
-  "name": "vscode-ibmi-UserSpooledFiles",
+  "name": "vscode-ibmi-userspooledfiles",
   "displayName": "Code for IBM i User Spooled Files",
   "description": "Tools to view and manage user spooled files on IBM i",
-  "version": "0.1.3",
+  "version": "0.2.0",
   "preview": true,
   "license": "MIT",
   "engines": {
@@ -103,6 +103,9 @@
         },
         {
           "command": "vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.openSplfasPDF"
         }
       ],
       "vscode-ibmi-splfbrowser.sortSpooledFiles": [
@@ -246,6 +249,10 @@
           "when": "never"
         },
         {
+          "command": "vscode-ibmi-splfbrowser.openSplfasPDF",
+          "when": "never"
+        },
+        {
           "command": "vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing",
           "when": "never"
         },
@@ -259,6 +266,26 @@
         },
         {
           "command": "vscode-ibmi-splfbrowser.revealSPLFBrowser",
+          "when": "never"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.createUpdatedSPOOLED_FILE_DATA_TF",
+          "when": "never"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.dropUpdatedSPOOLED_FILE_DATA_TF",
+          "when": "never"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.dropUpdatedSPOOLED_FILE_DATA_TF",
+          "when": "never"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.sortSPLFSFilesByName",
+          "when": "never"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.sortSPLFSFilesByDate",
           "when": "never"
         }
       ]
@@ -364,6 +391,12 @@
         "command": "vscode-ibmi-splfbrowser.openSplfWithLineSpacing",
         "enablement": "code-for-ibmi:connected",
         "title": "with Line Spacing",
+        "category": "IBM i SPLF"
+      },
+      {
+        "command": "vscode-ibmi-splfbrowser.openSplfasPDF",
+        "enablement": "code-for-ibmi:connected",
+        "title": "as PDF",
         "category": "IBM i SPLF"
       },
       {

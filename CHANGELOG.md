@@ -1,5 +1,14 @@
 # Change Log
 
+## Version 0.2.0
+  * Added open feature to open spooled files as local files so saving can be simpler.
+  * Downloading of spooled files will check to see if name already exists and offer a new sequenced name.
+  * Added functionality to save spooled file to open workspace.
+  * Added feature to open spooled file as PDF in edit tab (requires PDF viewer extension)
+  * Spooled files open in tab are downloaded to users temp folder. (Only tested on a Windows 11 system).
+  * Added progress to open and download of spooled files.  Nice for larger spooled files so you know it still working.
+  * Cleaned up extra commands appearing in pallet.
+
 ## Version 0.1.3
   * Fix some entry refresh issues
   * Improved spooled file list performance

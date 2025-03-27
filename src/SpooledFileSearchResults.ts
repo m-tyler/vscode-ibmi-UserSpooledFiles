@@ -92,8 +92,8 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
                   clearInterval(messageTimeout);
                 }
               }, timeoutInternal);
+              
               let results = await UserSplfSearch.searchUserSpooledFiles(search.term, search.user, search.name, search.word);
-
               if (results.length > 0) {
                 results.forEach(result => {
                   // if (objectNamesLower === true) {

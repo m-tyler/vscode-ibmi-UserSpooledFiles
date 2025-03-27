@@ -1,6 +1,7 @@
 import fs from 'fs';
 import tmp from 'tmp';
 import util from 'util';
+import vscode, { l10n, } from 'vscode';
 import { Code4i, makeid } from '../tools';
 import { IBMiSpooledFile, SplfOpenOptions,IBMiSplfCounts } from '../typings';
 import { CommandResult } from '@halcyontech/vscode-ibmi-types';
@@ -38,7 +39,7 @@ export namespace IBMiContentSplf {
     objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP, SPE.USER_DATA, SPE.SIZE, SPE.TOTAL_PAGES, SPE.QUALIFIED_JOB_NAME, SPE.JOB_NAME, SPE.JOB_USER, SPE.JOB_NUMBER, SPE.FORM_TYPE, SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE
     from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => ucase('${user}')) ) SPE where SPE.FILE_AVAILABLE = '*FILEEND' ${splfName ? ` and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""}
     order by ${sort.order === 'name' ? 'SPE.SPOOLED_FILE_NAME' : 'SPE.CREATION_TIMESTAMP'} ${!sort.ascending ? 'desc' : 'asc'} limit ${resultLimit}`;
-    let results = await Code4i!.runSQL(objQuery);
+    let results = await Code4i.runSQL(objQuery);
 
     if (results.length === 0) {
       return [];
@@ -79,12 +80,11 @@ export namespace IBMiContentSplf {
   * @param {string} name 
   * @param {string} qualifiedJobName 
   * @param {string} splfNumber 
-  * @param {string} fileExtension 
-  * @param {string=} additionalPath 
+  * @param {SplfOpenOptions} options 
   * @returns {string} a string containing spooled file data 
   */
   export async function downloadSpooledFileContent(uriPath: string, name: string, qualifiedJobName: string, splfNumber: string
-    , fileExtension: string, options?: SplfOpenOptions, additionalPath?: string) {
+    , options: SplfOpenOptions) {
     name = name.toUpperCase();
     qualifiedJobName = qualifiedJobName.toUpperCase();
     const connection = Code4i.getConnection();
@@ -92,16 +92,14 @@ export namespace IBMiContentSplf {
     const tempRmt = connection.getTempRemote(uriPath);
     const tmplclfile = await tmpFile();
 
-    // const tmpName = path.basename(tempRmt);
-    // const tmpFolder = path.dirname(tempRmt) + (additionalPath ? `/${additionalPath}` : ``);
-    // const path = homeDirectory +(folder !== undefined ? '/'+folder :'');
-
     const client = connection.client;
-    let openMode: string = 'WithSpaces';
+    let openMode: string = 'WithoutSpaces';
     let pageLength: number = 68;
+    let fileExtension = `splf`;
     if (options) {
-      openMode = options.openMode ? options.openMode.toString() : ``;
-      pageLength = options.pageLength ? options.pageLength : 68;
+      openMode = options.openMode ? options.openMode.toString() : openMode;
+      pageLength = options.pageLength ? options.pageLength : pageLength;
+      fileExtension = options.fileExtension ? options.fileExtension : fileExtension;
     }
 
     let retried = false;
@@ -155,29 +153,36 @@ export namespace IBMiContentSplf {
     await client.getFile(tmplclfile, tempRmt);
     results = await readFileAsync(tmplclfile, fileEncoding);
     if (cpysplfCompleted.code === 0 && openMode === 'withSpace') {
-      // todo: need to read first temp file, process control characters and write a new tempfile to pass to rest of code
-      const tempRmt2 = connection.getTempRemote(uriPath);
-      results = reWriteWithSpaces(results, pageLength); 
-      // results = reWriteWithSpaces(results);
+      await vscode.window.withProgress({
+        location: vscode.ProgressLocation.Window,
+      }, async progress => {
+        progress.report({
+          message: l10n.t(`Adding line spacing to spooled file report`),
+        });
+        results = reWriteWithSpaces(results, pageLength); 
+      });
     }
+    fs.unlink(tmplclfile, (err) => {
+      if (err) {throw err;}
+      // console.log('tmplclfile was deleted');
+    });
     return results;
 
   }
   /**
   */
-  export async function getSpooledPageLength(user: string, splfName: string, qualifiedJobName: string, splfNum: string, queue:string, queueLibrary :string): Promise<string> {
+  export async function getSpooledPageLength(user: string, splfName: string
+                                            , qualifiedJobName: string, splfNum: string
+                                            , queue:string, queueLibrary :string): Promise<string> {
     user = user.toUpperCase();
-
-    // let results: Tools.DB2Row[];
 
     const objQuery = `select PAGE_LENGTH
     from table (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '${queueLibrary}', OUTQ_NAME => '${queue}', DETAILED_INFO => 'YES') ) QE 
     where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}'  and QE.FILE_NUMBER = ${splfNum}` ;
-    let results = await Code4i!.runSQL(objQuery);
+    let results = await Code4i.runSQL(objQuery);
     if (results.length === 0) {
       return ` Spooled file ${splfName} in job ${qualifiedJobName} report number ${splfNum} was not found.`;
     }
-    // const resultSet = await Code4i!.runSQL(`SELECT * FROM QSYS2.ASP_INFO`);
     return String(results[0].PAGE_LENGTH);
   }
   /**
@@ -194,11 +199,10 @@ export namespace IBMiContentSplf {
       from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => '${user}') ) SPE 
       where FILE_AVAILABLE = '*FILEEND' ${splfName ? `and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""} 
       group by SPE.JOB_USER` ;
-      let results = await Code4i!.runSQL(objQuery);
+      let results = await Code4i.runSQL(objQuery);
       if (results.length === 0) {
         return {numberOf :` ${user} user has no spooled files`, totalPages:``};
       }
-      // const resultSet = await Code4i!.runSQL(`SELECT * FROM QSYS2.ASP_INFO`);
       return {numberOf :String(results[0].USER_SPLF_COUNT), totalPages:String(results[0].TOTAL_PAGES)};
     }
   /**
@@ -215,7 +219,7 @@ export namespace IBMiContentSplf {
     const objQuery = `select regexp_replace(UT.OBJTEXT,'Programmer - ','',1,0,'i') USER_PROFILE_TEXT
     from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => '*LIBL', OBJTYPELIST => '*MSGQ', OBJECT_NAME => '${user}') ) UT 
     limit 1`;
-    let results = await Code4i!.runSQL(objQuery);
+    let results = await Code4i.runSQL(objQuery);
     if (results.length === 0) {
       return ` I dont know where to find the text for ${user}`;
     }

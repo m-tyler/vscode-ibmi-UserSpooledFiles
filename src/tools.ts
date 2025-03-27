@@ -59,9 +59,6 @@ export function getQSYSObjectPath(library: string, name: string, type: string, m
 export function makeid(length?: number) {
   return codeForIBMi.tools.makeid(length);
 }
-export function findExistingDocumentUri(uri: vscode.Uri) {
-  return codeForIBMi.tools.findExistingDocumentUri(uri);
-}
 export function getInstance(): Instance | undefined {
   return (baseExtension && baseExtension.isActive && baseExtension.exports ? baseExtension.exports.instance : undefined);
 }
@@ -114,7 +111,7 @@ export async function checkSystemFunctionState(sysFunction: string, action: stri
       return connection.withTempDirectory(async tempDir => {
         const tempSourcePath = posix.join(tempDir, `overrideSPOOLED_FILE_DATA_Funcition.sql`);
 
-        await content!.writeStreamfileRaw(tempSourcePath, getSource(`SPOOLED_FILE_DATA`, Code4i.getTempLibrary()));
+        await content.writeStreamfileRaw(tempSourcePath, getSource(`SPOOLED_FILE_DATA`, Code4i.getTempLibrary()));
         const result = await connection.runCommand({
           command: `RUNSQLSTM SRCSTMF('${tempSourcePath}') COMMIT(*NONE) NAMING(*SQL)`,
           cwd: `/`,
