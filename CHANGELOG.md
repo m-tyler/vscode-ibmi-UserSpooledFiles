@@ -1,5 +1,8 @@
 # Change Log
 
+## Version 0.2.1
+  * Opening / Downloading spooled files stopped working because of some misspelled values
+  
 ## Version 0.2.0
   * Added open feature to open spooled files as local files so saving can be simpler.
   * Downloading of spooled files will check to see if name already exists and offer a new sequenced name.

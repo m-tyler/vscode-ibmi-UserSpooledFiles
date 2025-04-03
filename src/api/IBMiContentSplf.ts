@@ -108,6 +108,7 @@ export namespace IBMiContentSplf {
     let fileEncoding = `utf8`;
     let cpysplfCompleted: CommandResult = { code: -1, stdout: ``, stderr: `` };
     let results: string = ``;
+    let theStatement: string =``;
     while (retry > 0) {
       retry--;
       try {
@@ -116,9 +117,10 @@ export namespace IBMiContentSplf {
           case `pdf`:
             // fileEncoding = null;
             fileEncoding = ``;
+            theStatement = `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*PDF) STMFOPT(*REPLACE)\nDLYJOB DLY(1)`;
             await connection.runCommand({
-              command: `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*PDF) STMFOPT(*REPLACE)\nDLYJOB DLY(1)`
-              , environment: `ile`
+              command: theStatement
+            , environment: `ile`
             });
             break;
           default:
@@ -130,8 +132,13 @@ export namespace IBMiContentSplf {
 
             // fileExtension = `txt`;
             // DLYJOB to ensure the CPY command completes in time.
+            theStatement = `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*NONE) STMFOPT(*REPLACE)`; 
+            if (openMode === 'withSpaces') {
+              theStatement = theStatement +` CTLCHAR(*PRTCTL)`; 
+            } 
+            theStatement = theStatement +` \nDLYJOB DLY(1)\nCPY OBJ('${tempRmt}') TOOBJ('${tempRmt}') TOCCSID(1208) DTAFMT(*TEXT) REPLACE(*YES)`;
             cpysplfCompleted = await connection.runCommand({
-              command: `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*NONE) STMFOPT(*REPLACE) ${openMode === 'withSpace' ? `CTLCHAR(*PRTCTL)` : ``} \nDLYJOB DLY(1)\nCPY OBJ('${tempRmt}') TOOBJ('${tempRmt}') TOCCSID(1208) DTAFMT(*TEXT) REPLACE(*YES)`
+              command: theStatement
               , environment: `ile`
             });
         }
@@ -152,7 +159,7 @@ export namespace IBMiContentSplf {
 
     await client.getFile(tmplclfile, tempRmt);
     results = await readFileAsync(tmplclfile, fileEncoding);
-    if (cpysplfCompleted.code === 0 && openMode === 'withSpace') {
+    if (cpysplfCompleted.code === 0 && openMode === 'withSpaces') {
       await vscode.window.withProgress({
         location: vscode.ProgressLocation.Window,
       }, async progress => {
