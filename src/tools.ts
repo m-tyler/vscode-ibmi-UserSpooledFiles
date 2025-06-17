@@ -1,52 +1,77 @@
+import type { MemberParts } from '@halcyontech/vscode-ibmi-types/api/IBMi';
+import { IBMiMember } from '@halcyontech/vscode-ibmi-types';
 import { CodeForIBMi, CommandResult, RemoteCommand } from '@halcyontech/vscode-ibmi-types';
-import Instance from "@halcyontech/vscode-ibmi-types/api/Instance";
 import { Tools } from '@halcyontech/vscode-ibmi-types/api/Tools';
-// import { ComponentState } from '@halcyontech/vscode-ibmi-types/components/component';
-import * as vscode from 'vscode';
-import { Extension, extensions } from "vscode";
+import { Extension, ExtensionContext } from "vscode";
 import { FuncInfo } from './typings';
 import { posix } from "path";
+import { loadBase, getBase } from './base';
 
-let codeForIBMi: CodeForIBMi;
-let baseExtension: Extension<CodeForIBMi> | undefined;
 
 export namespace Code4i {
-  export async function initialize() {
-    baseExtension = (extensions ? extensions.getExtension(`halcyontechltd.code-for-ibmi`) : undefined);
-    if (baseExtension) {
-      codeForIBMi = (baseExtension.isActive ? baseExtension.exports : await baseExtension.activate());
-    }
-    else {
-      throw new Error("halcyontechltd.code-for-ibmi not found or cannot be activated");
-    }
+  export async function initialize(context: ExtensionContext) {
+    loadBase(context);
   }
+  // export async function initialize() {
+  //   baseExtension = (extensions ? extensions.getExtension(`halcyontechltd.code-for-ibmi`) : undefined);
+  //   if (baseExtension) {
+  //     codeForIBMi = (baseExtension.isActive ? baseExtension.exports : await baseExtension.activate());
+  //   }
+  //   else {
+  //     throw new Error("halcyontechltd.code-for-ibmi not found or cannot be activated");
+  //   }
+  // }
 
+  export function getInstance() {
+    return getBase()!.instance;
+  }
   export function getConnection() {
-    return codeForIBMi.instance.getConnection();
+    return getInstance().getConnection();
   }
-
   export function getConfig() {
-    return codeForIBMi.instance.getConfig();
+    return getInstance().getConnection().getConfig();
   }
-
   export function getContent() {
-    return codeForIBMi.instance.getContent();
+    return getInstance().getConnection().getContent();
   }
-
+  export function customUI() {
+    return getBase()?.customUI();
+  }
   export function getTempLibrary(): string {
     return getConfig().tempLibrary;
   }
-
-  export async function getTable(library: string, name: string): Promise<Tools.DB2Row[]> {
-    return getContent().getTable(library, name, name, true);
+  export function parserMemberPath(string: string, checkExtension?: boolean): MemberParts {
+    return getInstance().getConnection().parserMemberPath(string, checkExtension);
+  }
+  export function sysNameInLocal(string: string): string {
+    return getInstance().getConnection().sysNameInLocal(string);
   }
 
-  export async function runSQL(sqlStatement: string): Promise<Tools.DB2Row[]> {
-    return getContent().ibmi.runSQL(sqlStatement);
+  // export async function getTable(library: string, name: string): Promise<Tools.DB2Row[]> {
+  //     return getContent().getTable(library, name, name, true);
+  // }
+
+  export async function runSQL(sqlStatement: string, options?: { fakeBindings?: (string | number)[]; forceSafe?: boolean; }): Promise<Tools.DB2Row[]> {
+    return getContent().ibmi.runSQL(sqlStatement, options || undefined);
   }
 
   export async function runCommand(command: RemoteCommand): Promise<CommandResult> {
     return await getConnection().runCommand(command);
+  }
+  export async function getMemberInfo(library: string, sourceFile: string, member: string): Promise<IBMiMember | undefined> {
+    return await getConnection().getContent().getMemberInfo(library, sourceFile, member);
+  }
+  export function makeid(length?: number) {
+    return getBase()!.tools.makeid(length);
+  }
+  export function getLibraryIAsp(library: string):string | undefined {
+    return getConnection().getLibraryIAsp(library);
+  }
+  export function getCurrentIAspName(): string | undefined {
+    return getConnection().getCurrentIAspName();
+  }
+  export function lookupLibraryIAsp(library: string): Promise<string | undefined> {
+    return getConnection().lookupLibraryIAsp(library);
   }
 }
 
@@ -56,12 +81,12 @@ export function getQSYSObjectPath(library: string, name: string, type: string, m
   return `${iasp ? `/${iasp.toUpperCase()}` : ''}/QSYS.LIB/${library.toUpperCase()}.LIB/${name.toUpperCase()}.${type.toUpperCase()}${member ? `/${member.toUpperCase()}.MBR` : ''}`;
 }
 
-export function makeid(length?: number) {
-  return codeForIBMi.tools.makeid(length);
-}
-export function getInstance(): Instance | undefined {
-  return (baseExtension && baseExtension.isActive && baseExtension.exports ? baseExtension.exports.instance : undefined);
-}
+// export function makeid(length?: number) {
+//   return codeForIBMi.tools.makeid(length);
+// }
+// export function getInstance(): Instance | undefined {
+//   return (baseExtension && baseExtension.isActive && baseExtension.exports ? baseExtension.exports.instance : undefined);
+// }
 export function sanitizeSearchTerm(searchTerm: string): string {
   return searchTerm.replace(/\\/g, `\\\\`).replace(/"/g, `\\"`);
 }
@@ -85,7 +110,10 @@ export async function whereIsCustomFunc(funcName: string): Promise<FuncInfo> {
     currentUser = connection.currentUser;
   }
   let funcLookupRS: Tools.DB2Row[];
-  let statement = `select SPECIFIC_SCHEMA,SPECIFIC_NAME,ROUTINE_TEXT,LONG_COMMENT from QSYS2.SYSFUNCS SF inner join table( values(1,'${currentUser}'),(2,'ILEDITOR'),(3,'SYSTOOLS'),(4,'QSYS2') ) LL (Pos, ASCHEMA) on ASCHEMA = SPECIFIC_SCHEMA where ROUTINE_NAME = '${funcName}' limit 1`;
+  let statement = `select SPECIFIC_SCHEMA,SPECIFIC_NAME,ROUTINE_TEXT,LONG_COMMENT 
+    from QSYS2.SYSFUNCS SF 
+    inner join table( values(1,'${currentUser}'),(2,'ILEDITOR'),(3,'SYSTOOLS'),(4,'QSYS2') ) LL (Pos, ASCHEMA) 
+    on ASCHEMA = SPECIFIC_SCHEMA where ROUTINE_NAME = '${funcName}' limit 1`.replace(/\n\s*/g, ' ');
   funcLookupRS = await Code4i.runSQL(statement);
   return {
     funcSysLib: String(funcLookupRS[0].SPECIFIC_SCHEMA),

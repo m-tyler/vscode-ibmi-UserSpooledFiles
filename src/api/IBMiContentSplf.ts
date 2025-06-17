@@ -2,7 +2,7 @@ import fs from 'fs';
 import tmp from 'tmp';
 import util from 'util';
 import vscode, { l10n, } from 'vscode';
-import { Code4i, makeid } from '../tools';
+import { Code4i } from '../tools';
 import { IBMiSpooledFile, SplfOpenOptions,IBMiSplfCounts } from '../typings';
 import { CommandResult } from '@halcyontech/vscode-ibmi-types';
 const tmpFile = util.promisify(tmp.file);
@@ -36,9 +36,15 @@ export namespace IBMiContentSplf {
     var objQuery;
     // let results: Tools.DB2Row[];
 
-    objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP, SPE.USER_DATA, SPE.SIZE, SPE.TOTAL_PAGES, SPE.QUALIFIED_JOB_NAME, SPE.JOB_NAME, SPE.JOB_USER, SPE.JOB_NUMBER, SPE.FORM_TYPE, SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE
-    from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => ucase('${user}')) ) SPE where SPE.FILE_AVAILABLE = '*FILEEND' ${splfName ? ` and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""}
-    order by ${sort.order === 'name' ? 'SPE.SPOOLED_FILE_NAME' : 'SPE.CREATION_TIMESTAMP'} ${!sort.ascending ? 'desc' : 'asc'} limit ${resultLimit}`;
+    objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP
+    , SPE.USER_DATA, SPE.SIZE, SPE.TOTAL_PAGES, SPE.QUALIFIED_JOB_NAME, SPE.JOB_NAME, SPE.JOB_USER, SPE.JOB_NUMBER, SPE.FORM_TYPE
+    , SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE
+    from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => ucase('${user}')) ) SPE 
+    where SPE.FILE_AVAILABLE = '*FILEEND' ${splfName ? ` and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""}
+    order by ${sort.order === 'name' ? 'SPE.SPOOLED_FILE_NAME' : 'SPE.CREATION_TIMESTAMP'} 
+    ${!sort.ascending ? 'desc' : 'asc'} 
+    , SPE.SPOOLED_FILE_NUMBER ${!sort.ascending ? 'desc' : 'asc'} 
+    limit ${resultLimit}`.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
 
     if (results.length === 0) {
@@ -53,13 +59,13 @@ export namespace IBMiContentSplf {
       .map(object => ({
         user: user,
         name: connection.sysNameInLocal(String(object.SPOOLED_FILE_NAME)),
-        number: Number(object.SPOOLED_FILE_NUMBER),
+        number: object.SPOOLED_FILE_NUMBER,
         status: connection.sysNameInLocal(String(object.STATUS)),
         creationTimestamp: object.CREATION_TIMESTAMP,
         userData: connection.sysNameInLocal(String(object.USER_DATA)),
         size: Number(object.SIZE),
         totalPages: Number(object.TOTAL_PAGES),
-        pageLength: Number(0),
+        pageLength: String('0'),
         qualifiedJobName: connection.sysNameInLocal(String(object.QUALIFIED_JOB_NAME)),
         jobName: connection.sysNameInLocal(String(object.JOB_NAME)),
         jobUser: connection.sysNameInLocal(String(object.JOB_USER)),
@@ -98,7 +104,7 @@ export namespace IBMiContentSplf {
     let fileExtension = `splf`;
     if (options) {
       openMode = options.openMode ? options.openMode.toString() : openMode;
-      pageLength = options.pageLength ? options.pageLength : pageLength;
+      pageLength = options.pageLength ? Number(options.pageLength) : pageLength;
       fileExtension = options.fileExtension ? options.fileExtension : fileExtension;
     }
 
@@ -185,7 +191,7 @@ export namespace IBMiContentSplf {
 
     const objQuery = `select PAGE_LENGTH
     from table (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '${queueLibrary}', OUTQ_NAME => '${queue}', DETAILED_INFO => 'YES') ) QE 
-    where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}'  and QE.FILE_NUMBER = ${splfNum}` ;
+    where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}'  and QE.FILE_NUMBER = ${splfNum}`.replace(/\n\s*/g, ' ') ;
     let results = await Code4i.runSQL(objQuery);
     if (results.length === 0) {
       return ` Spooled file ${splfName} in job ${qualifiedJobName} report number ${splfNum} was not found.`;
@@ -205,7 +211,7 @@ export namespace IBMiContentSplf {
       const objQuery = `select count(*) USER_SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
       from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => '${user}') ) SPE 
       where FILE_AVAILABLE = '*FILEEND' ${splfName ? `and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""} 
-      group by SPE.JOB_USER` ;
+      group by SPE.JOB_USER`.replace(/\n\s*/g, ' ') ;
       let results = await Code4i.runSQL(objQuery);
       if (results.length === 0) {
         return {numberOf :` ${user} user has no spooled files`, totalPages:``};
@@ -225,7 +231,7 @@ export namespace IBMiContentSplf {
     // from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => 'QSYS', OBJTYPELIST => '*USRPRF', OBJECT_NAME => '${user}') ) UT 
     const objQuery = `select regexp_replace(UT.OBJTEXT,'Programmer - ','',1,0,'i') USER_PROFILE_TEXT
     from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => '*LIBL', OBJTYPELIST => '*MSGQ', OBJECT_NAME => '${user}') ) UT 
-    limit 1`;
+    limit 1`.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
     if (results.length === 0) {
       return ` I dont know where to find the text for ${user}`;

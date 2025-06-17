@@ -3,13 +3,13 @@ import { Range } from "vscode";
 export interface IBMiSpooledFile {
   user: string
   name: string
-  number: number
+  number: string
   status: string
   creationTimestamp: string
   userData: string
   size: number
   totalPages: number
-  pageLength: number
+  pageLength: string
   qualifiedJobName :string
   jobName: string
   jobUser: string
@@ -33,7 +33,7 @@ export interface SplfOpenOptions {
   readonly?: boolean;
   openMode?: SplfDefaultOpenMode;
   position?: Range|undefined;
-  pageLength?: number;
+  pageLength?: string|undefined;
   fileExtension?: string|undefined;
   saveToPath?: string|undefined;
   tempPath?: boolean|undefined;

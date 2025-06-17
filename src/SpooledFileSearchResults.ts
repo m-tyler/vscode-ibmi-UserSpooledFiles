@@ -1,7 +1,7 @@
 import vscode, { l10n, } from 'vscode';
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
 import { UserSplfSearch } from './api/spooledFileSearch';
-import { Code4i, getInstance, checkSystemFunctionState } from "./tools";
+import { Code4i, checkSystemFunctionState } from "./tools";
 import { UserSplfSearchView } from './views/userSplfsSearchView';
 import { IBMiSplfCounts } from './typings';
 
@@ -143,7 +143,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
     }),
     vscode.window.registerTreeDataProvider(`UserSplfSearchView`, userSplfSearchViewProvider),
   );
-  getInstance()?.subscribe(context, `connected`, "Get temporary library", runOnConnection);
+  Code4i.getInstance()?.subscribe(context, `connected`, "Get temporary library", runOnConnection);
 }
 
 function getConfig() {

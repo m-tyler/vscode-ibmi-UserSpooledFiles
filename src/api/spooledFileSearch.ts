@@ -3,7 +3,7 @@ import util from "util";
 import fs from "fs";
 import tmp from "tmp";
 import { CommandResult } from "@halcyontech/vscode-ibmi-types";
-import { Code4i, makeid, whereIsCustomFunc} from "../tools";
+import { Code4i, whereIsCustomFunc} from "../tools";
 import { isProtectedFilter } from '../filesystem/qsys/SplfFs';
 import { IBMiContentSplf } from "../api/IBMiContentSplf";
 import { FuncInfo } from '../typings';
@@ -34,7 +34,7 @@ export namespace UserSplfSearch {
 
       const client = connection.client;
       const tempLib = config.tempLibrary;
-      const tempName = makeid();
+      const tempName = Code4i.makeid();
       const tempRmt = connection.getTempRemote(tempLib + `VSC_TMP_1` + `VSC_TMP_1`);
       if (tempRmt) {
         const tmpobj = await tmpFile();
@@ -71,7 +71,7 @@ export namespace UserSplfSearch {
 
         // Row length is the length of the SQL string used to insert each row
         const rowLength = recordLength + 55;
-        // 450000 is just below the maxiumu length for each insert.
+        // 450000 is just below the maximum length for each insert.
         const perInsert = Math.floor(400000 / rowLength);
         const insRowGroups = sliceUp(insRows, perInsert);
         insRowGroups.forEach(insRowGroup => {
@@ -93,7 +93,7 @@ export namespace UserSplfSearch {
           ,table (${funcInfo.funcSysLib}.SPOOLED_FILE_DATA(trim(QJOB),SFILE,SFNUMBER,'NO')) SD )
     select trim(SFUSER)||'/'||trim(OUTQ)||'/'||trim(SFILE)||'~'||trim(regexp_replace(QJOB,'(\\w*)/(\\w*)/(\\w*)','$3~$2~$1'))||'~'||trim(SFNUMBER)||'.splf'||':'||varchar(ORDINAL_POSITION)||':'||varchar(SPOOL_DATA,378) SEARCH_RESULT
       from ALL_USER_SPOOLED_FILE_DATA AMD
-      where upper(SPOOL_DATA) like upper('%${sanitizeSearchTerm(searchTerm)}%');`
+      where upper(SPOOL_DATA) like upper('%${sanitizeSearchTerm(searchTerm)}%');`.replace(/\n\s*/g, ' ')
           ;
         const rs = await Code4i.runSQL(sqlStatement);
         var resultString = rs.map(function (rsElem) { return rsElem.SEARCH_RESULT; }).join("\n");

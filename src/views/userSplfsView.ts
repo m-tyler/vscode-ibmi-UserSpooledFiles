@@ -167,13 +167,13 @@ export class UserSpooledFiles extends vscode.TreeItem implements IBMiSpooledFile
   type: string;
   user: string;
   name: string;
-  number: number;
+  number: string;
   status: string;
   creationTimestamp: string;
   userData: string;
   size: number;
   totalPages: number;
-  pageLength: number;
+  pageLength: string;
   qualifiedJobName: string;
   jobName: string;
   jobUser: string;
