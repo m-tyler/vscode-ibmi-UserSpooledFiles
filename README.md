@@ -12,24 +12,28 @@ Has support for:
 *  Searching through spooled files
 *  Filtering list based on certain criteria in spooled file attribute, like job number.
 *  Sorting spooled file list by name or date in ascending or descending order. 
-*  Download spooled file to .TXT or PDF
+*  Download spooled file to .TXT, .SPLF or .PDF
 *  Downloading spooled files to local workspace.
 *  Downloading spooled files with added line spacing (text format only).
 *  Delete spooled files by user, specific line, specific name, all matching filter. 
 *  Move a spooled file to another output queue. 
 *  Tool tip hover for number of spooled files for user
 *  Tool tip hover for spooled file to show extra attributes
+*  Multi-spooled file selections for many actions.  
 ---
 
 
 ## TODOs: 
-*  Multi-spooled file selections for all actions.  
 ---
 
 ## Commands 
-* IBM i SPLF: Refresh Spooled File Browser 
-* IBM i SPLF: Add Spooled File Filter 
-* IBM i SPLF: Delete Spooled File Filter 
+ * IBM i: Focus on User SPLF Browser View 
+ * IBM i SPLF: add Spooled File Filter 
+ * IBM i SPLF: close 
+ * IBM i SPLF•. collapse All 
+ * IBM i SPLF: Delete Spooled File Filter 
+ * IBM i SPLF: Expand All 
+ * IBM i SPLF: Refresh Spooled File Browser 
 ---
 
 ### Building from source

@@ -22,9 +22,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
   constructor(private context: vscode.ExtensionContext) {
     this.emitter = new vscode.EventEmitter();
     this.onDidChangeTreeData = this.emitter.event;
-
   }
-
 
   refresh(target?: any) {
     this.emitter.fire(target);

@@ -1,5 +1,11 @@
 # Change Log
 
+## Version 1.0.0
+  * Added multi-select abilities for ...
+    * Deleting spooled files
+    * Opening spooled files
+    * Downloading spooled file
+    
 ## Version 0.2.1
   * Opening / Downloading spooled files stopped working because of some misspelled values
   

@@ -165,10 +165,11 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               command: commands
               , environment: `ile`
             });
-
+            
             vscode.window.showInformationMessage(l10n.t(`Deleted {0}.`, pathString));
-
-            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node[0].parent);
+            
+            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, nodes[0].parent);
+            splfBrowserViewer.reveal(nodes[0].parent, { focus: true, select: true });
           } catch (e: unknown) {
             if (e instanceof Error) {
               vscode.window.showErrorMessage(l10n.t(`Error deleting user spooled file! {0}.`, e));
@@ -243,6 +244,8 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               command: `DLTF FILE(${tempLib}/${TempFileName}) `
               , environment: `ile`
             });
+            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node.parent);
+            splfBrowserViewer.reveal(node.parent, { focus: true, select: true });
           }
 
         }
@@ -314,6 +317,8 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               command: `DLTF FILE(${tempLib}/${TempFileName}) `
               , environment: `ile`
             });
+            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node.parent);
+            splfBrowserViewer.reveal(node.parent, { focus: true, select: true });
           }
 
         }
@@ -393,6 +398,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               , environment: `ile`
             });
             vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, nodes[0].parent);
+            splfBrowserViewer.reveal(nodes[0].parent, { focus: true, select: true });
 
           } catch (e: unknown) {
             if (e instanceof Error) {
