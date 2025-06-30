@@ -3,8 +3,9 @@ import tmp from 'tmp';
 import util from 'util';
 import vscode, { l10n, } from 'vscode';
 import { Code4i } from '../tools';
-import { IBMiSpooledFile, SplfOpenOptions,IBMiSplfCounts } from '../typings';
+import { IBMiSpooledFile, SplfOpenOptions, IBMiSplfCounts, IBMiSplf } from '../typings';
 import { CommandResult } from '@halcyontech/vscode-ibmi-types';
+
 const tmpFile = util.promisify(tmp.file);
 const readFileAsync = util.promisify(fs.readFile);
 const writeFileAsync = util.promisify(fs.writeFile);
@@ -16,30 +17,32 @@ export type SortOptions = {
 };
 export namespace IBMiContentSplf {
   /**
-  * @param {string} user 
+  * @param {IBMiSplf} item 
   * @param {string} SortOptions
   * @param {string=} splfName
   * @returns {Promise<IBMiSpooledFile[]>}
   */
-  export async function getUserSpooledFileFilter(user: string
-                                      , sort: SortOptions = { order: "date" ,ascending :true }
-                                      , splfName?: string
-                                      , searchWords?: string
-                                      , resultLimit?: number
-                                    ): Promise<IBMiSpooledFile[]> {
+  export async function getSpooledFileFilter(item: IBMiSplf
+    , sort: SortOptions = { order: "date", ascending: true }
+    , splfName?: string
+    , searchWords?: string
+    , resultLimit?: number
+  ): Promise<IBMiSpooledFile[]> {
     const connection = Code4i.getConnection();
 
-    sort.order = sort.order || { order: 'date' ,ascending:'asc'};
-    resultLimit = resultLimit||10000;
-    user = user.toUpperCase();
+    sort.order = sort.order || { order: 'date', ascending: 'asc' };
+    resultLimit = resultLimit || 10000;
+    let queryParm = ``;
+    if (item.type === 'USER') {
+      queryParm = `USER_NAME => '${item.name}'`;
+    } else if (item.type === 'OUTQ') {
+      queryParm = `USER_NAME=> '*ALL', OUTPUT_QUEUE => '${item.library}/${item.name}'`;
+    }
 
-    var objQuery;
-    // let results: Tools.DB2Row[];
-
-    objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP
+    const objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP
     , SPE.USER_DATA, SPE.SIZE, SPE.TOTAL_PAGES, SPE.QUALIFIED_JOB_NAME, SPE.JOB_NAME, SPE.JOB_USER, SPE.JOB_NUMBER, SPE.FORM_TYPE
     , SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE
-    from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => ucase('${user}')) ) SPE 
+    from table (QSYS2.SPOOLED_FILE_INFO(${queryParm}) ) SPE 
     where SPE.FILE_AVAILABLE = '*FILEEND' ${splfName ? ` and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""}
     order by ${sort.order === 'name' ? 'SPE.SPOOLED_FILE_NAME' : 'SPE.CREATION_TIMESTAMP'} 
     ${!sort.ascending ? 'desc' : 'asc'} 
@@ -57,7 +60,6 @@ export namespace IBMiContentSplf {
     // return results
     let returnSplfList = results
       .map(object => ({
-        user: user,
         name: connection.sysNameInLocal(String(object.SPOOLED_FILE_NAME)),
         number: object.SPOOLED_FILE_NUMBER,
         status: connection.sysNameInLocal(String(object.STATUS)),
@@ -83,18 +85,17 @@ export namespace IBMiContentSplf {
   /**
   * Download the contents of a source member
   * @param {string} uriPath 
-  * @param {string} name 
-  * @param {string} qualifiedJobName 
-  * @param {string} splfNumber 
   * @param {SplfOpenOptions} options 
   * @returns {string} a string containing spooled file data 
   */
-  export async function downloadSpooledFileContent(uriPath: string, name: string, qualifiedJobName: string, splfNumber: string
-    , options: SplfOpenOptions) {
-    name = name.toUpperCase();
-    qualifiedJobName = qualifiedJobName.toUpperCase();
-    const connection = Code4i.getConnection();
+  export async function downloadSpooledFileContent(uriPath: string, options: SplfOpenOptions) {
+    const path = uriPath.split(`/`);
+    const nameParts = path[2].split(`~`);
+    const name = nameParts[0];
+    const qualifiedJobName = nameParts[3] + '/' + nameParts[2] + '/' + nameParts[1];
+    const splfNumber = nameParts[4].replace(`.splf`, ``);
 
+    const connection = Code4i.getConnection();
     const tempRmt = connection.getTempRemote(uriPath);
     const tmplclfile = await tmpFile();
 
@@ -111,42 +112,42 @@ export namespace IBMiContentSplf {
     let retried = false;
     let retry = 1;
     // let fileEncoding :BufferEncoding|null = `utf8`;
-    let fileEncoding = `utf8`;
+    let fileEncoding: string | null = `utf8`;
     let cpysplfCompleted: CommandResult = { code: -1, stdout: ``, stderr: `` };
     let results: string = ``;
-    let theStatement: string =``;
+    let theStatement: string = ``;
     while (retry > 0) {
       retry--;
       try {
         //If this command fails we need to try again after we delete the temp remote
         switch (fileExtension.toLowerCase()) {
-          case `pdf`:
-            // fileEncoding = null;
-            fileEncoding = ``;
-            theStatement = `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*PDF) STMFOPT(*REPLACE)\nDLYJOB DLY(1)`;
-            await connection.runCommand({
-              command: theStatement
+        case `pdf`:
+          fileEncoding = null;
+          // fileEncoding = ``;
+          theStatement = `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*PDF) STMFOPT(*REPLACE)\nDLYJOB DLY(1)`;
+          await connection.runCommand({
+            command: theStatement
             , environment: `ile`
-            });
-            break;
-          default:
-            // With the use of CPYSPLF and CPY to create a text based stream file in 1208, there are possibilities that the data becomes corrupt
-            // in the tempRmt object
-            connection.sendCommand({
-              command: `rm -f ${tempRmt}`
-            });
+          });
+          break;
+        default:
+          // With the use of CPYSPLF and CPY to create a text based stream file in 1208, there are possibilities that the data becomes corrupt
+          // in the tempRmt object
+          connection.sendCommand({
+            command: `rm -f ${tempRmt}`
+          });
 
-            // fileExtension = `txt`;
-            // DLYJOB to ensure the CPY command completes in time.
-            theStatement = `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*NONE) STMFOPT(*REPLACE)`; 
-            if (openMode === 'withSpaces') {
-              theStatement = theStatement +` CTLCHAR(*PRTCTL)`; 
-            } 
-            theStatement = theStatement +` \nDLYJOB DLY(1)\nCPY OBJ('${tempRmt}') TOOBJ('${tempRmt}') TOCCSID(1208) DTAFMT(*TEXT) REPLACE(*YES)`;
-            cpysplfCompleted = await connection.runCommand({
-              command: theStatement
-              , environment: `ile`
-            });
+          // fileExtension = `txt`;
+          // DLYJOB to ensure the CPY command completes in time.
+          theStatement = `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*NONE) STMFOPT(*REPLACE)`;
+          if (openMode === 'withSpaces') {
+            theStatement = theStatement + ` CTLCHAR(*PRTCTL)`;
+          }
+          theStatement = theStatement + ` \nDLYJOB DLY(1)\nCPY OBJ('${tempRmt}') TOOBJ('${tempRmt}') TOCCSID(1208) DTAFMT(*TEXT) REPLACE(*YES)`;
+          cpysplfCompleted = await connection.runCommand({
+            command: theStatement
+            , environment: `ile`
+          });
         }
       } catch (e) {
         if (String(e).startsWith(`CPDA08A`)) {
@@ -172,11 +173,11 @@ export namespace IBMiContentSplf {
         progress.report({
           message: l10n.t(`Adding line spacing to spooled file report`),
         });
-        results = reWriteWithSpaces(results, pageLength); 
+        results = reWriteWithSpaces(results, pageLength);
       });
     }
     fs.unlink(tmplclfile, (err) => {
-      if (err) {throw err;}
+      if (err) { throw err; }
       // console.log('tmplclfile was deleted');
     });
     return results;
@@ -184,60 +185,69 @@ export namespace IBMiContentSplf {
   }
   /**
   */
-  export async function getSpooledPageLength(user: string, splfName: string
-                                            , qualifiedJobName: string, splfNum: string
-                                            , queue:string, queueLibrary :string): Promise<string> {
-    user = user.toUpperCase();
-
+  export async function getSpooledPageLength(splfName: string, qualifiedJobName: string, splfNum: string
+                                          , queue: string, queueLibrary: string): Promise<string> {
     const objQuery = `select PAGE_LENGTH
     from table (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '${queueLibrary}', OUTQ_NAME => '${queue}', DETAILED_INFO => 'YES') ) QE 
-    where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}'  and QE.FILE_NUMBER = ${splfNum}`.replace(/\n\s*/g, ' ') ;
+    where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}' and QE.FILE_NUMBER = ${splfNum}`.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
     if (results.length === 0) {
       return ` Spooled file ${splfName} in job ${qualifiedJobName} report number ${splfNum} was not found.`;
     }
     return String(results[0].PAGE_LENGTH);
   }
-  /**
-  * @param {string} user
-  * @param {string=} splfName
-  * @returns {Promise<String>} a string with the count of spooled file for user
-  */
-    export async function getUserSpooledFileCount(user: string, splfName?: string, searchWord?: string): Promise<IBMiSplfCounts> {
-      user = user.toUpperCase();
-  
-      // let results: Tools.DB2Row[];
-  
-      const objQuery = `select count(*) USER_SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
-      from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => '${user}') ) SPE 
-      where FILE_AVAILABLE = '*FILEEND' ${splfName ? `and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""} 
-      group by SPE.JOB_USER`.replace(/\n\s*/g, ' ') ;
-      let results = await Code4i.runSQL(objQuery);
-      if (results.length === 0) {
-        return {numberOf :` ${user} user has no spooled files`, totalPages:``};
-      }
-      return {numberOf :String(results[0].USER_SPLF_COUNT), totalPages:String(results[0].TOTAL_PAGES)};
+  export async function getSpooledFileDeviceType(splfName: string, qualifiedJobName: string, splfNum: string
+                                                    , queue: string, queueLibrary: string): Promise<string> {
+    const objQuery = `select DEVICE_TYPE
+    from table (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '${queueLibrary}', OUTQ_NAME => '${queue}', DETAILED_INFO => 'YES') ) QE 
+    where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}' and QE.FILE_NUMBER = ${splfNum}`.replace(/\n\s*/g, ' ');
+    let results = await Code4i.runSQL(objQuery);
+    if (results.length === 0) {
+      return ` Spooled file ${splfName} in job ${qualifiedJobName} report number ${splfNum} was not found.`;
     }
+    return String(results[0].DEVICE_TYPE);
+  }
   /**
-  * @param {string} user
-  * @returns a promised string for user profile text 
+  * @param {string} name
+  * @param {string} library
+  * @param {string} type
+  * @returns {Promise<String>} a string with the count of spooled file for `name`
   */
-  export async function getUserProfileText(user: string): Promise<string | undefined> {
-    user = user.toUpperCase();
-
-    // let results: Tools.DB2Row[];
-
-    // Note: this line does not work for most *USRPRFs because as a regular programmer I dont have access to see the profile
-    // from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => 'QSYS', OBJTYPELIST => '*USRPRF', OBJECT_NAME => '${user}') ) UT 
+  export async function getFilterSpooledFileCount(name: string, library: string,type: string, searchWord?: string): Promise<IBMiSplfCounts> {
+    let queryParm = ``;
+    if (type === 'USER') {
+      queryParm = `USER_NAME => '${name}'`;
+    } else if (type === 'OUTQ') {
+      queryParm = `USER_NAME=> '*ALL', OUTPUT_QUEUE => '${library}/${name}'`;
+    }
+    let objQuery = `select count(*) SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
+      from table (QSYS2.SPOOLED_FILE_INFO(${queryParm}) ) SPE 
+      where FILE_AVAILABLE = '*FILEEND' 
+      `.replace(/\n\s*/g, ' ');
+    let results = await Code4i.runSQL(objQuery);
+    if (results.length === 0) {
+      return { numberOf: ` ${name} has no spooled files`, totalPages: `` };
+    }
+    return { numberOf: String(results[0].SPLF_COUNT), totalPages: String(results[0].TOTAL_PAGES) };
+  }
+  /**
+  * @param {string} name
+  * @param {string} library?
+  * @param {string} type?
+  * @returns a promised string for item.name text 
+  */
+  export async function getFilterDescription(name: string, library?: string, type?: string): Promise<string | undefined> {
     const objQuery = `select regexp_replace(UT.OBJTEXT,'Programmer - ','',1,0,'i') USER_PROFILE_TEXT
-    from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => '*LIBL', OBJTYPELIST => '*MSGQ', OBJECT_NAME => '${user}') ) UT 
+    from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => '${library?library:`*LIBL`}'
+                                      , OBJTYPELIST => '${type===`OUTQ`?`*OUTQ`:`*MSGQ`}'
+                                      , OBJECT_NAME => '${name}') ) UT 
     limit 1`.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
     if (results.length === 0) {
-      return ` I dont know where to find the text for ${user}`;
+      return ` I dont know where to find the text for ${name}`;
     }
-    const userText: string = String(results[0].USER_PROFILE_TEXT);
-    return userText;
+    const itemText: string = String(results[0].USER_PROFILE_TEXT);
+    return itemText;
   }
 
 }
@@ -271,11 +281,11 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
       if (skipToLine < lineCount) {
         // If we have just a few lines to go from last print line to end of page def
         // produce up to three additional blank lines before actual new page content.
-        if (pageLength >lineCount) {
+        if (pageLength > lineCount) {
           for (let l = 1; l <= 3; l++) { newLines.push(``); }
         }
         // This condition should be every new subsequent page
-        for (let l = lineCount; l < lineCount+skipToLine; l++) { newLines.push(``); /*lineCount++;*/ }
+        for (let l = lineCount; l < lineCount + skipToLine; l++) { newLines.push(``); /*lineCount++;*/ }
         lineCount = 0;
         pageCount++;
       } else {
@@ -289,8 +299,8 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
     }
     else if (spaceToLines === -1) {
       if (lineCount > 0) {
-        let newLine = newLines[newLines.length-1];
-        newLines[newLines.length-1] = overlayLine( newLine ,line);
+        let newLine = newLines[newLines.length - 1];
+        newLines[newLines.length - 1] = overlayLine(newLine, line);
         continue;
       }
     }
@@ -306,20 +316,20 @@ function reWriteWithSpaces(originalResults: string, pageLength?: number) {
 
   return results;
 }
-function overlayLine( line: string, newLine: string) :string {
+function overlayLine(line: string, newLine: string): string {
   const ll = line.length;
-  for (let c = 0; c < ll; c++) { 
+  for (let c = 0; c < ll; c++) {
     // Match to any space character
-    let newLineSpaceChar :RegExpMatchArray | null = newLine.substring(c,c+1).match(/[ ]/i);
+    let newLineSpaceChar: RegExpMatchArray | null = newLine.substring(c, c + 1).match(/[ ]/i);
     // Match to non-alphabet and space chars to replace
-    let lineMatchAlphaSpace :RegExpMatchArray | null = line.substring(c,c+1).match(/[a-z ]/i);
+    let lineMatchAlphaSpace: RegExpMatchArray | null = line.substring(c, c + 1).match(/[a-z ]/i);
     if (!newLineSpaceChar && !lineMatchAlphaSpace) {
-      line = setCharAt( line ,c ,newLine.substring(c,c+1));
+      line = setCharAt(line, c, newLine.substring(c, c + 1));
     }
   }
   return line;
 }
-function setCharAt(str :string ,index :number ,chr :string ) {
-  if(index > str.length-1) {return str;}
-  return str.substring(0,index) + chr + str.substring(index+1);
+function setCharAt(str: string, index: number, chr: string) {
+  if (index > str.length - 1) { return str; }
+  return str.substring(0, index) + chr + str.substring(index + 1);
 }

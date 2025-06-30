@@ -1,14 +1,14 @@
 import * as vscode from 'vscode';
 import { TreeDataProvider } from "vscode";
 import path from 'path';
-import { UserSplfSearch } from '../api/spooledFileSearch';
+import { SplfSearch } from '../api/spooledFileSearch';
 import { getUriFromPathSplf } from "../filesystem/qsys/SplfFs";
 import { SplfOpenOptions } from '../typings';
 
-export class UserSplfSearchView implements TreeDataProvider<any> {
+export class SplfSearchView implements TreeDataProvider<any> {
   private _term = ``;
   private _actionCommand = ``;
-  private _results: UserSplfSearch.Result[] = [];
+  private _results: SplfSearch.Result[] = [];
   private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void> = new vscode.EventEmitter<vscode.TreeItem | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
 
@@ -33,7 +33,7 @@ export class UserSplfSearchView implements TreeDataProvider<any> {
     vscode.commands.executeCommand(`setContext`, `vscode-ibmi-splfbrowser:searchViewVisible`, visible);
   }
 
-  setResults(actionCommand: string, term: string, results: UserSplfSearch.Result[]) {
+  setResults(actionCommand: string, term: string, results: SplfSearch.Result[]) {
     this._actionCommand = actionCommand;
     this._term = term;
     this._results = results;
@@ -77,7 +77,7 @@ export class UserSplfSearchView implements TreeDataProvider<any> {
 class HitCommand extends vscode.TreeItem {
   private readonly _actionCommand: string;
 
-  constructor(actionCommand: string, readonly results: UserSplfSearch.Result[], readonly term: string) {
+  constructor(actionCommand: string, readonly results: SplfSearch.Result[], readonly term: string) {
     super(actionCommand, vscode.TreeItemCollapsibleState.Expanded);
 
     this.contextValue = `hitCommand`;
@@ -95,7 +95,7 @@ class HitSource extends vscode.TreeItem {
   private readonly _path: string;
   private readonly _readonly?: boolean;
 
-  constructor(readonly result: UserSplfSearch.Result, readonly term: string) {
+  constructor(readonly result: SplfSearch.Result, readonly term: string) {
     super(result.label ? result.path : path.posix.basename(result.path), vscode.TreeItemCollapsibleState.Expanded);
 
     const hits = result.lines.length;
@@ -113,7 +113,7 @@ class HitSource extends vscode.TreeItem {
   }
 }
 class LineHit extends vscode.TreeItem {
-  constructor(term: string, readonly path: string, line: UserSplfSearch.Line, readonly?: boolean) {
+  constructor(term: string, readonly path: string, line: SplfSearch.Line, readonly?: boolean) {
     let highlights: [number, number][] = [];
 
     const upperContent = line.content.toUpperCase();

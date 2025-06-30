@@ -10,7 +10,9 @@ import util from 'util';
 const writeFileAsync = util.promisify(fs.writeFile);
 
 export function getSpooledFileUri(splf: IBMiSpooledFile, options?: SplfOpenOptions) {
-  return getUriFromPath(`${splf.user}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.jobUser}~${splf.jobNumber}~${splf.number}.splf`, options);
+  let path =`${splf.jobUser}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.jobUser}~${splf.jobNumber}~${splf.number}`;
+  // TODO: get config of name pattern
+  return getUriFromPath(`${path}.splf`, options);
 }
 export function getUriFromPathSplf(path: string, options?: SplfOpenOptions) {
   return getUriFromPath(path, options);
@@ -66,7 +68,7 @@ export class SplfFS implements vscode.FileSystemProvider {
     const connection = Code4i.getConnection();
     if (connection && contentApi) {
       //           0         1            2             3  a          b                c                d                  e       
-      // path: `spooledfile://${splf.user}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.job_user}~${splf.jobNumber}~${splf.number}.splf``,
+      // path example: `spooledfile:/${splf.jobUser}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.job_user}~${splf.jobNumber}~${splf.number}.splf``,
       const lpath = uri.path.split(`/`);
       const lfilename = lpath[3].split(`~`);
       const qualifiedJobName = lfilename[3] + '/' + lfilename[2] + '/' + lfilename[1];
@@ -79,7 +81,7 @@ export class SplfFS implements vscode.FileSystemProvider {
         fileExtension: `splf`,
         saveToPath: os.tmpdir()
       };
-      const spooledFileContent = await IBMiContentSplf.downloadSpooledFileContent(uri.path, name, qualifiedJobName, splfNumber, options);
+      const spooledFileContent = await IBMiContentSplf.downloadSpooledFileContent(uri.path, options);
       if (spooledFileContent !== undefined) {
         return new Uint8Array(Buffer.from(spooledFileContent, `utf8`));
       }

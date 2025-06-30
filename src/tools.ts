@@ -12,16 +12,6 @@ export namespace Code4i {
   export async function initialize(context: ExtensionContext) {
     loadBase(context);
   }
-  // export async function initialize() {
-  //   baseExtension = (extensions ? extensions.getExtension(`halcyontechltd.code-for-ibmi`) : undefined);
-  //   if (baseExtension) {
-  //     codeForIBMi = (baseExtension.isActive ? baseExtension.exports : await baseExtension.activate());
-  //   }
-  //   else {
-  //     throw new Error("halcyontechltd.code-for-ibmi not found or cannot be activated");
-  //   }
-  // }
-
   export function getInstance() {
     return getBase()!.instance;
   }

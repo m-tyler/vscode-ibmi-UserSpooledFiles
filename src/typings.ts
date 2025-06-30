@@ -1,7 +1,6 @@
 import { Range } from "vscode";
 
 export interface IBMiSpooledFile {
-  user: string
   name: string
   number: string
   status: string
@@ -17,10 +16,13 @@ export interface IBMiSpooledFile {
   formType: string
   queueLibrary: string
   queue: string
+  deviceType: string
 }  
-export interface IBMiSplfUser {
-  user: string
+export interface IBMiSplf {
+  name: string
+  library?: string
   text?: string
+  type: string
 }  
 export interface IBMiSplfCounts {
   numberOf: string

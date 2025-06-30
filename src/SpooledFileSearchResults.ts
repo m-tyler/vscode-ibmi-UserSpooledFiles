@@ -1,43 +1,51 @@
 import vscode, { l10n, } from 'vscode';
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
-import { UserSplfSearch } from './api/spooledFileSearch';
+import { SplfSearch } from './api/spooledFileSearch';
 import { Code4i, checkSystemFunctionState } from "./tools";
-import { UserSplfSearchView } from './views/userSplfsSearchView';
+import { SplfSearchView } from './views/SplfsSearchView';
 import { IBMiSplfCounts } from './typings';
 
 interface SearchParms {
-  user: any,
-  name: any,
+  item: any,
+  library: any,
+  type: any,
+  splfName: any,
   term: any,
   word: any,
 };
 
 
-let userSplfSearchViewProvider = <UserSplfSearchView>{};
+let splfSearchViewProvider = <SplfSearchView>{};
 export async function initializeSpooledFileSearchView(context: vscode.ExtensionContext) {
-  userSplfSearchViewProvider = new UserSplfSearchView(context);
+  splfSearchViewProvider = new SplfSearchView(context);
   context.subscriptions.push(
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.searchSpooledFiles`, async (node) => {
       let search = <SearchParms>{};
       //Initiate search from Spooled file item
       if (node && (/^spooledfile/.test(node.contextValue))) {
-        search.user = node.user;
-        search.name = node.name;
+        search.item = node.parent.name; // USER or OUTQ name
+        search.library = node.parent.library; // USER or OUTQ library
+        search.type = node.parent.type; // USER or OUTQ 
+        search.splfName = node.name;
         search.word = node.parent.filter;
-      }//Initiate search from user filter
-      else if (node && (/^splfuser/.test(node.contextValue))) {
-        search.user = node.user;
       }
-      if (!search.user) {
+      else if (node && (/^splflist/.test(node.contextValue))) {
+        search.item = node.name; // USER or OUTQ name
+        search.library = node.library; // USER or OUTQ library
+        search.type = node.type; // USER or OUTQ 
+      }
+      if (!search.item) {
         const config = getConfig();
-        search.user = await vscode.window.showInputBox({
+        // TODO: how do I ask for type of input, like whether its a user or OUTQ??
+        search.item = await vscode.window.showInputBox({
           value: config.currentLibrary,
-          prompt: l10n.t(`Enter user to search over`),
-          title: l10n.t(`Search user spooled files`),
+          prompt: l10n.t(`If no library given then assumed *LIBL.`),
+          title: l10n.t(`Search User or OUTQ spooled files`),
         });
+        // TODO: do we have or have access to a tool to get object type information??
       }
-      if (!search.name) {
-        search.name = await vscode.window.showInputBox({
+      if (!search.splfName) {
+        search.splfName = await vscode.window.showInputBox({
           placeHolder:`*ALL`,
           value: ``,
           prompt: l10n.t(`Enter spooled file name to search over, or blank for *ALL`),
@@ -45,11 +53,11 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
         });
       }
 
-      if (!search.name && search.name !== ``) { return; }
+      if (!search.splfName && search.splfName !== ``) { return; }
 
-      if (search.name !== ``) {
+      if (search.splfName !== ``) {
         search.term = await vscode.window.showInputBox({
-          prompt: l10n.t(`Search for string in spooled files named {0}`, search.name)
+          prompt: l10n.t(`Search for string in spooled files named {0}`, search.splfName)
         });
       } else {
         search.term = await vscode.window.showInputBox({
@@ -64,22 +72,22 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
             title: l10n.t(`Searching`),
           }, async progress => {
             progress.report({
-              message: l10n.t(`'{0}' in {1}, {2} spooled files.`, search.term, search.user, search.name)
+              message: l10n.t(`'{0}' in {1}, {2} spooled files.`, search.term, search.item, search.splfName)
             });
             let splf :IBMiSplfCounts; 
-            splf = await IBMiContentSplf.getUserSpooledFileCount(search.user, search.name);
+            splf = await IBMiContentSplf.getFilterSpooledFileCount(search.item, search.library, search.type, search.term);
             if (Number(splf.numberOf) > 0) {
               // NOTE: if more messages are added, lower the timeout interval
               const timeoutInternal = 9000;
               const searchMessages = [
-                l10n.t(`'{0}' in {1} spooled files.`, search.term, search.name),
-                l10n.t(`This is taking a while because there are {0} spooled files with a total page count of {1}. Searching '{2}' in {3} still.`, splf.numberOf, splf.totalPages, search.term, search.user),
+                l10n.t(`'{0}' in {1} spooled files.`, search.term, search.splfName),
+                l10n.t(`This is taking a while because there are {0} spooled files with a total page count of {1}. Searching '{2}' in {3} still.`, splf.numberOf, splf.totalPages, search.term, search.item),
                 l10n.t(`What's so special about '{0}' anyway?`, search.term),
-                l10n.t(`Still searching '{0}' in {1}...`, search.term, search.user),
+                l10n.t(`Still searching '{0}' in {1}...`, search.term, search.item),
                 l10n.t(`Wow. This really is taking a while. Let's hope you get the result you want.`),
                 l10n.t(`Did you know that I'm searching through {0} pages of spooled file data?  This might take a little bit.`, splf.totalPages),
                 l10n.t(`How does one end up with {0} spooled files.  Ever heard of cleaning up?`, splf.numberOf),
-                l10n.t(`'{0}' in {1}.`, search.term, search.user),
+                l10n.t(`'{0}' in {1}.`, search.term, search.item),
               ];
               let currentMessage = 0;
               const messageTimeout = setInterval(() => {
@@ -93,7 +101,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
                 }
               }, timeoutInternal);
               
-              let results = await UserSplfSearch.searchUserSpooledFiles(search.term, search.user, search.name, search.word);
+              let results = await SplfSearch.searchSpooledFiles(search.term, search.item, search.splfName, search.word);
               if (results.length > 0) {
                 results.forEach(result => {
                   // if (objectNamesLower === true) {
@@ -108,7 +116,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
                 // setSearchResults(search.term, results.sort((a, b) => a.path.localeCompare(b.path)));
 
               } else {
-                vscode.window.showInformationMessage(l10n.t(`No results found searching for '{0}' in {1}.`, search.term, search.name));
+                vscode.window.showInformationMessage(l10n.t(`No results found searching for '{0}' in {1}.`, search.term, search.splfName));
               }
             } else {
               vscode.window.showErrorMessage(l10n.t(`No spooled files to search.`));
@@ -141,7 +149,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
           }
         });
     }),
-    vscode.window.registerTreeDataProvider(`UserSplfSearchView`, userSplfSearchViewProvider),
+    vscode.window.registerTreeDataProvider(`UserSplfSearchView`, splfSearchViewProvider),
   );
   Code4i.getInstance()?.subscribe(context, `connected`, "Get temporary library", runOnConnection);
 }
@@ -155,30 +163,8 @@ function getConfig() {
     throw new Error(l10n.t('Not connected to an IBM i'));
   }
 }
-
-function getConnection() {
-  const connection = Code4i.getConnection();
-  if (connection) {
-    return connection;
-  }
-  else {
-    throw new Error(l10n.t('Not connected to an IBM i'));
-  }
-}
-
-function getContent() {
-  const content = Code4i.getContent();
-  if (content) {
-    return content;
-  }
-  else {
-    throw new Error(l10n.t('Not connected to an IBM i'));
-  }
-}
-
-// let userSplfSearchViewProvider = <UserSplfSearchView>{};
-export function setSearchResultsSplf(actionCommand: string, term: string, results: UserSplfSearch.Result[]) {
-  userSplfSearchViewProvider.setResults(actionCommand, term, results);
+export function setSearchResultsSplf(actionCommand: string, term: string, results: SplfSearch.Result[]) {
+  splfSearchViewProvider.setResults(actionCommand, term, results);
 }
 
 async function runOnConnection(): Promise<void> {
