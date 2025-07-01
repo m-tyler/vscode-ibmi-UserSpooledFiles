@@ -27,7 +27,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
 
   refresh(target?: any) {
     this.emitter.fire(target);
-    vscode.window.showInformationMessage(vscode.l10n.t(`Spooled File Browser refreshed.`));
+    // vscode.window.showInformationMessage(vscode.l10n.t(`Spooled File Browser refreshed.`));
   }
 
   /**
@@ -113,7 +113,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
   async resolveTreeItem(item: SpooledFileFilter|SpooledFiles, element: any, token: vscode.CancellationToken): Promise<vscode.TreeItem> {
     if (item instanceof SpooledFileFilter) {
       // TypeScript knows 'param' is of type MyClass here
-      console.log(`in resolveTreeItem, item is an instance of SpooledFileFilter`);
+      // console.log(`in resolveTreeItem, item is an instance of SpooledFileFilter`);
       const splfNum = await IBMiContentSplf.getFilterSpooledFileCount(item.name, item.library, item.type, item.filter);
       const text = await IBMiContentSplf.getFilterDescription(item.name, item.library, item.type);
       item.numberOf = splfNum.numberOf;
@@ -128,7 +128,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
       );
       item.tooltip.supportHtml = true;
     } else if (item instanceof SpooledFiles) {
-      console.log(`in resolveTreeItem, 'item' is an instance of SpooledFiles`);
+      // console.log(`in resolveTreeItem, 'item' is an instance of SpooledFiles`);
       const text = await IBMiContentSplf.getSpooledFileDeviceType( item.name, item.qualifiedJobName, item.number ,item.queue, item.queueLibrary );
       item.deviceType = text;
       item.tooltip = new vscode.MarkdownString(`<table>`
@@ -260,7 +260,7 @@ export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
     this.iconPath = new vscode.ThemeIcon(icon);
     this.protected = parent.protected;
     this.contextValue = `spooledfile${this.protected ? `_readonly` : ``}`;
-    this.resourceUri = getSpooledFileUri(object, parent.protected ? { readonly: true } : undefined);
+    this.resourceUri = getSpooledFileUri(object, parent.protected ? { readonly: true } : undefined)||'';
     this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
     this.deviceType = ``;
     

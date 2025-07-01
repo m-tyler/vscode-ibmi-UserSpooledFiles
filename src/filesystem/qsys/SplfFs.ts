@@ -69,11 +69,12 @@ export class SplfFS implements vscode.FileSystemProvider {
     if (connection && contentApi) {
       //           0         1            2             3  a          b                c                d                  e       
       // path example: `spooledfile:/${splf.jobUser}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.job_user}~${splf.jobNumber}~${splf.number}.splf``,
-      const lpath = uri.path.split(`/`);
-      const lfilename = lpath[3].split(`~`);
-      const qualifiedJobName = lfilename[3] + '/' + lfilename[2] + '/' + lfilename[1];
-      const splfNumber = lfilename[4].replace(`.splf`, ``);
-      const name = lfilename[0];
+      // let lpath = uri.path.split(`/`);
+      // if (lpath[0]==='') {lpath = uri.path.substring(1).split('/');} //
+      // const lfilename = lpath[3].split(`~`);
+      // const qualifiedJobName = lfilename[3] + '/' + lfilename[2] + '/' + lfilename[1];
+      // const splfNumber = lfilename[4].replace(`.splf`, ``);
+      // const name = lfilename[0];
       const queryStrings: ParsedUrlQuery = parse(uri.query);
       const options: SplfOpenOptions = {
         readonly: queryStrings.ReadOnly||`true` ? true: false,

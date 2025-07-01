@@ -153,6 +153,8 @@ class LineHit extends vscode.TreeItem {
       tempPath: undefined
     };
     this.resourceUri = getUriFromPathSplf(this.path, openOptions);
+    this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
+
 
     this.contextValue = `lineHit`;
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;

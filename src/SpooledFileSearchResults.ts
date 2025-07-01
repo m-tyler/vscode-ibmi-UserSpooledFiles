@@ -42,11 +42,24 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
           prompt: l10n.t(`If no library given then assumed *LIBL.`),
           title: l10n.t(`Search User or OUTQ spooled files`),
         });
-        // TODO: do we have or have access to a tool to get object type information??
+        const splitUp = search.item.split('/');
+        if (splitUp.Length === 2) {
+          search.library = splitUp[0];
+          search.item = splitUp[0];
+        } else {
+          search.item = splitUp[0];
+        }
+        if (await IBMiContentSplf.getFilterDescription(search.item, search.library)/* find if a user profile */) {
+          search.item = `USER`;
+        }
+        else if (await IBMiContentSplf.getFilterDescription(search.item, search.library, '*OUTQ') /* is this an OUTQ?? */) {
+          search.item = `OUTQ`;
+        }
       }
+      // const nodesChildren = node.getChildren(node);
       if (!search.splfName) {
         search.splfName = await vscode.window.showInputBox({
-          placeHolder:`*ALL`,
+          placeHolder: `*ALL`,
           value: ``,
           prompt: l10n.t(`Enter spooled file name to search over, or blank for *ALL`),
           title: l10n.t(`Search in named spooled file`),
@@ -74,7 +87,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
             progress.report({
               message: l10n.t(`'{0}' in {1}, {2} spooled files.`, search.term, search.item, search.splfName)
             });
-            let splf :IBMiSplfCounts; 
+            let splf: IBMiSplfCounts;
             splf = await IBMiContentSplf.getFilterSpooledFileCount(search.item, search.library, search.type, search.term);
             if (Number(splf.numberOf) > 0) {
               // NOTE: if more messages are added, lower the timeout interval
@@ -100,8 +113,8 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
                   clearInterval(messageTimeout);
                 }
               }, timeoutInternal);
-              
-              let results = await SplfSearch.searchSpooledFiles(search.term, search.item, search.splfName, search.word);
+
+              let results = await SplfSearch.searchSpooledFiles(search.term, {name:search.item, library:search.library, type:search.type}, search.splfName, search.word);
               if (results.length > 0) {
                 results.forEach(result => {
                   // if (objectNamesLower === true) {
@@ -131,7 +144,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
 
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.dropUpdatedSPOOLED_FILE_DATA_TF`, async () => {
-      await checkSystemFunctionState( 'SPOOLED_FILE_DATA' , 'drop');
+      await checkSystemFunctionState('SPOOLED_FILE_DATA', 'drop');
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.createUpdatedSPOOLED_FILE_DATA_TF`, async (node) => {
       let message = l10n.t(`Are you having troubles searching through spooled files?`);
@@ -143,7 +156,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
             vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`))
               .then(async result => {
                 if (result === l10n.t(`Yes`)) {
-                  await checkSystemFunctionState( 'SPOOLED_FILE_DATA' , 'add');
+                  await checkSystemFunctionState('SPOOLED_FILE_DATA', 'add');
                 }
               });
           }

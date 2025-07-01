@@ -1,8 +1,10 @@
 import type { MemberParts } from '@halcyontech/vscode-ibmi-types/api/IBMi';
+import { FilterType } from '@halcyontech/vscode-ibmi-types/api/Filter';
 import { IBMiMember } from '@halcyontech/vscode-ibmi-types';
-import { CodeForIBMi, CommandResult, RemoteCommand } from '@halcyontech/vscode-ibmi-types';
+import { CommandResult, RemoteCommand, IBMiObject } from '@halcyontech/vscode-ibmi-types';
+import { SortOrder } from '@halcyontech/vscode-ibmi-types/api/IBMiContent';
 import { Tools } from '@halcyontech/vscode-ibmi-types/api/Tools';
-import { Extension, ExtensionContext } from "vscode";
+import { ExtensionContext } from "vscode";
 import { FuncInfo } from './typings';
 import { posix } from "path";
 import { loadBase, getBase } from './base';
@@ -32,6 +34,17 @@ export namespace Code4i {
   }
   export function parserMemberPath(string: string, checkExtension?: boolean): MemberParts {
     return getInstance().getConnection().parserMemberPath(string, checkExtension);
+  }
+  export function getObjectList(filters: {
+          library: string;
+          object?: string;
+          types?: string[];
+          filterType?: FilterType;
+      }, sortOrder?: SortOrder): Promise<IBMiObject[]> {
+    return getInstance().getConnection().getContent().getObjectList(filters, sortOrder);
+  }
+  export async function getUserProfileText(user: string): Promise<string | undefined> {
+    return getInstance().getConnection().getContent().getUserProfileText(user);
   }
   export function sysNameInLocal(string: string): string {
     return getInstance().getConnection().sysNameInLocal(string);

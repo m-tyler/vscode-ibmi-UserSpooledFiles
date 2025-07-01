@@ -244,12 +244,12 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           let objects: IBMiSpooledFile[] = [];
 
           if (result === `Yes`) {
-            const x = {
+            const treeFilter = {
               name: node.parent.name,
               library: node.parent.library,
               type: node.parent.type,
             } as IBMiSplf;
-            objects = await IBMiContentSplf.getSpooledFileFilter(x, node.sort, node.name);
+            objects = await IBMiContentSplf.getSpooledFileFilter(treeFilter, node.sort, node.name);
           }
           try {
             let commands = objects.map((o: any) => (
@@ -322,12 +322,12 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           let objects: IBMiSpooledFile[] = [];
 
           if (result === `Yes`) {
-            const x = {
+            const treeFilter = {
               name: node.parent.name,
               library: node.parent.library,
               type: node.parent.type,
             } as IBMiSplf;
-            objects = await IBMiContentSplf.getSpooledFileFilter(x, node.sort, undefined, node.parent.filter);
+            objects = await IBMiContentSplf.getSpooledFileFilter(treeFilter, node.sort, undefined, node.parent.filter);
           }
           try {
             let commands = objects.map((o: any) => (
@@ -573,7 +573,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           progress.report({
             message: l10n.t(`Downloading spooled file contents`),
           });
-          splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.path, options);
+          splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path||'', options);
         });
         const tmpExt = path.extname(node.path);
         const fileName = path.basename(node.path, tmpExt);

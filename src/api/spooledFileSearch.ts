@@ -41,7 +41,12 @@ export namespace SplfSearch {
 
         const setccsid = connection.remoteFeatures.setccsid;
         // Start process to build on-server list of spooled files to search through
-        const objects = await IBMiContentSplf.getSpooledFileFilter( filter, { order: "date", ascending: false }, splfName, searchWords);
+        const treeFilter = {
+              name: filter.name,
+              library: filter.library,
+              type: filter.type,
+            } as IBMiSplf;
+        const objects = await IBMiContentSplf.getSpooledFileFilter( treeFilter, { order: "date", ascending: false }, splfName, searchWords);
         const workFileFormat = {
           user: objects[0].jobUser,
           queue: objects[0].queue,
@@ -63,6 +68,7 @@ export namespace SplfSearch {
         let insRows: string[] = [],
           sequence = 0;
         for (let i = 0; i < objects.length; i++) {
+          // TODO: for each item, we need to discover if SPLF data is *AFPDS and skip if so
           sequence = decimalSequence ? ((i + 1) / 100) : i + 1;
           insRows.push(
             `('${objects[i].jobUser}', '${objects[i].queue}', '${objects[i].qualifiedJobName}', '${objects[i].name}', '${objects[i].number}')`

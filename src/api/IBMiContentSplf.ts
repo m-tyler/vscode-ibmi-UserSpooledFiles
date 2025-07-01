@@ -1,7 +1,7 @@
 import fs from 'fs';
 import tmp from 'tmp';
 import util from 'util';
-import vscode, { l10n, } from 'vscode';
+import vscode, { l10n, Uri } from 'vscode';
 import { Code4i } from '../tools';
 import { IBMiSpooledFile, SplfOpenOptions, IBMiSplfCounts, IBMiSplf } from '../typings';
 import { CommandResult } from '@halcyontech/vscode-ibmi-types';
@@ -17,12 +17,14 @@ export type SortOptions = {
 };
 export namespace IBMiContentSplf {
   /**
-  * @param {IBMiSplf} item 
+  * @param {IBMiSplf} treeFilter 
   * @param {string} SortOptions
-  * @param {string=} splfName
+  * @param {string} splfName
+  * @param {string} searchWords
+  * @param {number} resultLimit sometimes system can only handle so many results, default is 10000. 
   * @returns {Promise<IBMiSpooledFile[]>}
   */
-  export async function getSpooledFileFilter(item: IBMiSplf
+  export async function getSpooledFileFilter(treeFilter: IBMiSplf
     , sort: SortOptions = { order: "date", ascending: true }
     , splfName?: string
     , searchWords?: string
@@ -33,10 +35,10 @@ export namespace IBMiContentSplf {
     sort.order = sort.order || { order: 'date', ascending: 'asc' };
     resultLimit = resultLimit || 10000;
     let queryParm = ``;
-    if (item.type === 'USER') {
-      queryParm = `USER_NAME => '${item.name}'`;
-    } else if (item.type === 'OUTQ') {
-      queryParm = `USER_NAME=> '*ALL', OUTPUT_QUEUE => '${item.library}/${item.name}'`;
+    if (treeFilter.type === 'USER') {
+      queryParm = `USER_NAME => '${treeFilter.name}'`;
+    } else if (treeFilter.type === 'OUTQ') {
+      queryParm = `USER_NAME=> '*ALL', OUTPUT_QUEUE => '${treeFilter.library}/${treeFilter.name}'`;
     }
 
     const objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP
@@ -84,19 +86,20 @@ export namespace IBMiContentSplf {
   }
   /**
   * Download the contents of a source member
-  * @param {string} uriPath 
+  * @param {string} pPath no leading slash path name
   * @param {SplfOpenOptions} options 
   * @returns {string} a string containing spooled file data 
   */
-  export async function downloadSpooledFileContent(uriPath: string, options: SplfOpenOptions) {
-    const path = uriPath.split(`/`);
+  export async function downloadSpooledFileContent(pPath: string, options: SplfOpenOptions) {
+    pPath = pPath.replace(/^\/+/, '')||'';
+    const path = pPath.split(`/`)||'';
     const nameParts = path[2].split(`~`);
     const name = nameParts[0];
     const qualifiedJobName = nameParts[3] + '/' + nameParts[2] + '/' + nameParts[1];
     const splfNumber = nameParts[4].replace(`.splf`, ``);
 
     const connection = Code4i.getConnection();
-    const tempRmt = connection.getTempRemote(uriPath);
+    const tempRmt = connection.getTempRemote(pPath);
     const tmplclfile = await tmpFile();
 
     const client = connection.client;
@@ -237,16 +240,16 @@ export namespace IBMiContentSplf {
   * @returns a promised string for item.name text 
   */
   export async function getFilterDescription(name: string, library?: string, type?: string): Promise<string | undefined> {
-    const objQuery = `select regexp_replace(UT.OBJTEXT,'Programmer - ','',1,0,'i') USER_PROFILE_TEXT
+    const objQuery = `select regexp_replace(UT.OBJTEXT,'Programmer - ','',1,0,'i') OBJECT_TEXT
     from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => '${library?library:`*LIBL`}'
-                                      , OBJTYPELIST => '${type===`OUTQ`?`*OUTQ`:`*MSGQ`}'
+                                      , OBJTYPELIST => '${type===`OUTQ`?`*OUTQ`:`*USRPRF,*MSGQ`}'
                                       , OBJECT_NAME => '${name}') ) UT 
     limit 1`.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
     if (results.length === 0) {
       return ` I dont know where to find the text for ${name}`;
     }
-    const itemText: string = String(results[0].USER_PROFILE_TEXT);
+    const itemText: string = String(results[0].OBJECT_TEXT);
     return itemText;
   }
 
