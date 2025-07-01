@@ -163,14 +163,14 @@ export class SpooledFileFilter extends vscode.TreeItem {
   itemText: string;
   numberOf: string;
   readonly sort: SortOptions = { order: "date", ascending: true };
-  constructor(conextType: string, parent: vscode.TreeItem, theFilter: IBMiSplf, currentUser: string) {
+  constructor(contextType: string, parent: vscode.TreeItem, theFilter: IBMiSplf, currentUser: string) {
     super(theFilter.name, vscode.TreeItemCollapsibleState.Collapsed);
     this.name = theFilter.name;
     this.library = theFilter.library || `*LIBL`;
     this.type = theFilter.type;
     const icon = objectIcons[`${this.type.toLocaleLowerCase()}`] || objectIcons[``];
     this.protected = this.name.toLocaleUpperCase() !== currentUser.toLocaleUpperCase() ? true : false;
-    this.contextValue = `${conextType}${this.protected ? `_readonly` : ``}`;
+    this.contextValue = `${contextType}${this.protected ? `_readonly` : ``}`;
     this.path = theFilter.name;
     this.collapsibleState = vscode.TreeItemCollapsibleState.Collapsed;
     this.parent = parent;
@@ -260,7 +260,7 @@ export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
     this.iconPath = new vscode.ThemeIcon(icon);
     this.protected = parent.protected;
     this.contextValue = `spooledfile${this.protected ? `_readonly` : ``}`;
-    this.resourceUri = getSpooledFileUri(object, parent.protected ? { readonly: true } : undefined)||'';
+    this.resourceUri = getSpooledFileUri(parent.type, object, parent.protected ? { readonly: true } : undefined)||'';
     this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
     this.deviceType = ``;
     

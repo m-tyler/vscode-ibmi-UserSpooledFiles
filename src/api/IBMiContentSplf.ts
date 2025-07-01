@@ -2,7 +2,7 @@ import fs from 'fs';
 import tmp from 'tmp';
 import util from 'util';
 import vscode, { l10n, Uri } from 'vscode';
-import { Code4i } from '../tools';
+import { breakUpSpooledFileName, Code4i } from '../tools';
 import { IBMiSpooledFile, SplfOpenOptions, IBMiSplfCounts, IBMiSplf } from '../typings';
 import { CommandResult } from '@halcyontech/vscode-ibmi-types';
 
@@ -92,24 +92,25 @@ export namespace IBMiContentSplf {
   */
   export async function downloadSpooledFileContent(pPath: string, options: SplfOpenOptions) {
     pPath = pPath.replace(/^\/+/, '')||'';
-    const path = pPath.split(`/`)||'';
-    const nameParts = path[2].split(`~`);
-    const name = nameParts[0];
-    const qualifiedJobName = nameParts[3] + '/' + nameParts[2] + '/' + nameParts[1];
-    const splfNumber = nameParts[4].replace(`.splf`, ``);
+    const parts = breakUpSpooledFileName(pPath);
 
     const connection = Code4i.getConnection();
     const tempRmt = connection.getTempRemote(pPath);
     const tmplclfile = await tmpFile();
+    const splfName = parts.get("name")||'';
+    const splfNumber = parts.get("number")||'';
+    const queue = parts.get("queue")||'';
+    const queueLibrary = parts.get("queueLibrary")||'';
+    const qualifiedJobName = parts.get("jobNumber")+'/'+parts.get("jobUser")+'/'+parts.get("jobName");
+    let fileExtension = parts.get("fileExtension")||'splf';
 
     const client = connection.client;
     let openMode: string = 'WithoutSpaces';
     let pageLength: number = 68;
-    let fileExtension = `splf`;
     if (options) {
       openMode = options.openMode ? options.openMode.toString() : openMode;
       pageLength = options.pageLength ? Number(options.pageLength) : pageLength;
-      fileExtension = options.fileExtension ? options.fileExtension : fileExtension;
+      fileExtension = options.fileExtension || fileExtension;
     }
 
     let retried = false;
@@ -127,7 +128,7 @@ export namespace IBMiContentSplf {
         case `pdf`:
           fileEncoding = null;
           // fileEncoding = ``;
-          theStatement = `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*PDF) STMFOPT(*REPLACE)\nDLYJOB DLY(1)`;
+          theStatement = `CPYSPLF FILE(${splfName}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*PDF) STMFOPT(*REPLACE)\nDLYJOB DLY(1)`;
           await connection.runCommand({
             command: theStatement
             , environment: `ile`
@@ -142,7 +143,7 @@ export namespace IBMiContentSplf {
 
           // fileExtension = `txt`;
           // DLYJOB to ensure the CPY command completes in time.
-          theStatement = `CPYSPLF FILE(${name}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*NONE) STMFOPT(*REPLACE)`;
+          theStatement = `CPYSPLF FILE(${splfName}) TOFILE(*TOSTMF) JOB(${qualifiedJobName}) SPLNBR(${splfNumber}) TOSTMF('${tempRmt}') WSCST(*NONE) STMFOPT(*REPLACE)`;
           if (openMode === 'withSpaces') {
             theStatement = theStatement + ` CTLCHAR(*PRTCTL)`;
           }
@@ -202,8 +203,8 @@ export namespace IBMiContentSplf {
   export async function getSpooledFileDeviceType(splfName: string, qualifiedJobName: string, splfNum: string
                                                     , queue: string, queueLibrary: string): Promise<string> {
     const objQuery = `select DEVICE_TYPE
-    from table (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '${queueLibrary}', OUTQ_NAME => '${queue}', DETAILED_INFO => 'YES') ) QE 
-    where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}' and QE.FILE_NUMBER = ${splfNum}`.replace(/\n\s*/g, ' ');
+    from QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC QE where OUTQLIB = '${queueLibrary}' and OUTQ = '${queue}' 
+    and QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}' and QE.FILE_NUMBER = ${splfNum}`.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
     if (results.length === 0) {
       return ` Spooled file ${splfName} in job ${qualifiedJobName} report number ${splfNum} was not found.`;

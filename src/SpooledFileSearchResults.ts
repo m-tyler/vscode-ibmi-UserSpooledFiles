@@ -36,7 +36,6 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
       }
       if (!search.item) {
         const config = getConfig();
-        // TODO: how do I ask for type of input, like whether its a user or OUTQ??
         search.item = await vscode.window.showInputBox({
           value: config.currentLibrary,
           prompt: l10n.t(`If no library given then assumed *LIBL.`),
@@ -113,7 +112,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
                   clearInterval(messageTimeout);
                 }
               }, timeoutInternal);
-
+              // vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.revealSPLFBrowser`, node, {expand:true});
               let results = await SplfSearch.searchSpooledFiles(search.term, {name:search.item, library:search.library, type:search.type}, search.splfName, search.word);
               if (results.length > 0) {
                 results.forEach(result => {

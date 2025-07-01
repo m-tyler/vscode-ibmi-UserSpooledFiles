@@ -564,8 +564,13 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       let splfContent: string = ``;
       let localFileUri: vscode.Uri;
       let localFileUris: vscode.Uri[] = [];
+      nodes = await updateSpooledFileDeviceType(nodes );
       for (let node of nodes) {
-        // await dosomething(node);
+        if (node.deviceType === '*AFPDS') {options.fileExtension = 'pdf';}
+        if (node.deviceType === '*USERASCII') {
+          vscode.window.showWarningMessage(l10n.t(`Spooled File {0} in {1} is not eligible for operation.`,node.name, node.queue));
+          continue;
+        }
         await vscode.window.withProgress({
           location: vscode.ProgressLocation.Window,
           // title: l10n.t(`Downloading spooled file content`),
@@ -819,13 +824,22 @@ async function updateSpooledFilePageSize(nodes: SpooledFiles[]): Promise<Spooled
   }
   return modifiedNodes;
 }
-async function updateSpooledFileDeviceType(nodes: SpooledFiles[]): Promise<SpooledFiles[]> {
+async function updateSpooledFileDeviceType(nodes: SpooledFiles[]|IBMiSpooledFile[]): Promise<SpooledFiles[]|IBMiSpooledFile[]> {
   const modifiedNodes: SpooledFiles[] = [];
+  const modifiedSpooledFiles: IBMiSpooledFile[] = [];
   for (const node of nodes) {
-    node.deviceType = await IBMiContentSplf.getSpooledFileDeviceType(node.name
+    const deviceType = await IBMiContentSplf.getSpooledFileDeviceType(node.name
                                                                 , node.qualifiedJobName, node.number
                                                                 , node.queue, node.queueLibrary);
-    modifiedNodes.push(node);
+    if (node instanceof SpooledFiles) {
+      node.deviceType = deviceType;
+      modifiedNodes.push(node);
+    }
+    else 
+    {
+      node.deviceType = deviceType;
+      modifiedSpooledFiles.push(node);
+    }
   }
-  return modifiedNodes;
+  return modifiedNodes||modifiedSpooledFiles;
 }
