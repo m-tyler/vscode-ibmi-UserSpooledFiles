@@ -1,5 +1,7 @@
 # Change Log
 
+## Version 1.1.0 
+  *  Added ability to view a specific OUTQ.
 ## Version 1.0.0
   * Added multi-select abilities for ...
     * Deleting spooled files
