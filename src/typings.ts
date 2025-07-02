@@ -3,22 +3,22 @@ import { Range } from "vscode";
 export interface IBMiSpooledFile {
   name: string
   number: string
-  status: string
-  creationTimestamp: string
-  userData: string
-  size: number
-  totalPages: number
-  pageLength: string
+  status?: string
+  creationTimestamp?: string
+  userData?: string
+  size?: number
+  totalPages?: number
+  pageLength?: string
   qualifiedJobName :string
-  jobName: string
-  jobUser: string
-  jobNumber: string
-  formType: string
+  jobName?: string
+  jobUser?: string
+  jobNumber?: string
+  formType?: string
   queueLibrary: string
   queue: string
-  deviceType: string
+  deviceType?: string
 }  
-export interface IBMiSplf {
+export interface IBMISplfList {
   name: string
   library?: string
   text?: string

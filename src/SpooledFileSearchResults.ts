@@ -48,10 +48,10 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
         } else {
           search.item = splitUp[0];
         }
-        if (await IBMiContentSplf.getFilterDescription(search.item, search.library)/* find if a user profile */) {
+        if (await IBMiContentSplf.getFilterDescription([search.item], search.library)/* find if a user profile */) {
           search.item = `USER`;
         }
-        else if (await IBMiContentSplf.getFilterDescription(search.item, search.library, '*OUTQ') /* is this an OUTQ?? */) {
+        else if (await IBMiContentSplf.getFilterDescription([search.item], search.library, '*OUTQ') /* is this an OUTQ?? */) {
           search.item = `OUTQ`;
         }
       }

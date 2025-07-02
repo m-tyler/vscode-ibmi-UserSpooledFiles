@@ -3,8 +3,9 @@ import tmp from 'tmp';
 import util from 'util';
 import vscode, { l10n, Uri } from 'vscode';
 import { breakUpSpooledFileName, Code4i } from '../tools';
-import { IBMiSpooledFile, SplfOpenOptions, IBMiSplfCounts, IBMiSplf } from '../typings';
+import { IBMiSpooledFile, SplfOpenOptions, IBMiSplfCounts, IBMISplfList } from '../typings';
 import { CommandResult } from '@halcyontech/vscode-ibmi-types';
+import { SpooledFiles } from '../views/SplfsView';
 
 const tmpFile = util.promisify(tmp.file);
 const readFileAsync = util.promisify(fs.readFile);
@@ -17,22 +18,18 @@ export type SortOptions = {
 };
 export namespace IBMiContentSplf {
   /**
-  * @param {IBMiSplf} treeFilter 
+  * @param {IBMISplfList} treeFilter 
   * @param {string} SortOptions
   * @param {string} splfName
   * @param {string} searchWords
   * @param {number} resultLimit sometimes system can only handle so many results, default is 10000. 
-  * @returns {Promise<IBMiSpooledFile[]>}
+  * @returns {Promise<IBMiSpooledFile[]>} returns array of spooled files for filter criteria of type {@link IBMiSpooledFile}
   */
-  export async function getSpooledFileFilter(treeFilter: IBMiSplf
-    , sort: SortOptions = { order: "date", ascending: true }
-    , splfName?: string
-    , searchWords?: string
-    , resultLimit?: number
-  ): Promise<IBMiSpooledFile[]> {
+  export async function getSpooledFileFilter(treeFilter: IBMISplfList, sort: SortOptions, splfName?: string, searchWords?: string, resultLimit?: number): Promise<IBMiSpooledFile[]> {
     const connection = Code4i.getConnection();
 
-    sort.order = sort.order || { order: 'date', ascending: 'asc' };
+    sort.order = sort.order || 'date';
+    if (!sort.ascending) {sort.ascending = false;} 
     resultLimit = resultLimit || 10000;
     let queryParm = ``;
     if (treeFilter.type === 'USER') {
@@ -86,23 +83,22 @@ export namespace IBMiContentSplf {
   }
   /**
   * Download the contents of a source member
-  * @param {string} pPath no leading slash path name
+  * 
+  * @param {string} pPath 
   * @param {SplfOpenOptions} options 
   * @returns {string} a string containing spooled file data 
   */
-  export async function downloadSpooledFileContent(pPath: string, options: SplfOpenOptions) {
-    pPath = pPath.replace(/^\/+/, '')||'';
+  export async function downloadSpooledFileContent(pPath: string, options: SplfOpenOptions): Promise<string> {
+    pPath = pPath.replace(/^\/+/, '') || '';
     const parts = breakUpSpooledFileName(pPath);
 
     const connection = Code4i.getConnection();
     const tempRmt = connection.getTempRemote(pPath);
     const tmplclfile = await tmpFile();
-    const splfName = parts.get("name")||'';
-    const splfNumber = parts.get("number")||'';
-    const queue = parts.get("queue")||'';
-    const queueLibrary = parts.get("queueLibrary")||'';
-    const qualifiedJobName = parts.get("jobNumber")+'/'+parts.get("jobUser")+'/'+parts.get("jobName");
-    let fileExtension = parts.get("fileExtension")||'splf';
+    const splfName = parts.get("name") || '';
+    const splfNumber = parts.get("number") || '';
+    const qualifiedJobName = parts.get("jobNumber") + '/' + parts.get("jobUser") + '/' + parts.get("jobName");
+    let fileExtension = parts.get("fileExtension") || 'splf';
 
     const client = connection.client;
     let openMode: string = 'WithoutSpaces';
@@ -188,9 +184,16 @@ export namespace IBMiContentSplf {
 
   }
   /**
+   * Get extra Spooled File information, PAGE_LENGTH, for use mostly by the open with line spacing
+   * 
+   * @param {string} queue - OUTQ name
+   * @param {string} queueLibrary - OUTQ library name
+   * @param {string} spflName - Spooled File name
+   * @param {string} qualifiedJobName - Spooled File qualified job ID
+   * @param {string} spflNum - Spooled File name+job sequence number
+   * @returns a promised string, with the page length value or error message
   */
-  export async function getSpooledPageLength(splfName: string, qualifiedJobName: string, splfNum: string
-                                          , queue: string, queueLibrary: string): Promise<string> {
+  export async function getSpooledPageLength(queue: string, queueLibrary: string, splfName: string, qualifiedJobName: string, splfNum: string): Promise<string> {
     const objQuery = `select PAGE_LENGTH
     from table (QSYS2.OUTPUT_QUEUE_ENTRIES(OUTQ_LIB => '${queueLibrary}', OUTQ_NAME => '${queue}', DETAILED_INFO => 'YES') ) QE 
     where QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}' and QE.FILE_NUMBER = ${splfNum}`.replace(/\n\s*/g, ' ');
@@ -200,58 +203,167 @@ export namespace IBMiContentSplf {
     }
     return String(results[0].PAGE_LENGTH);
   }
-  export async function getSpooledFileDeviceType(splfName: string, qualifiedJobName: string, splfNum: string
-                                                    , queue: string, queueLibrary: string): Promise<string> {
-    const objQuery = `select DEVICE_TYPE
-    from QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC QE where OUTQLIB = '${queueLibrary}' and OUTQ = '${queue}' 
-    and QE.SPOOLED_FILE_NAME = '${splfName}' and QE.JOB_NAME = '${qualifiedJobName}' and QE.FILE_NUMBER = ${splfNum}`.replace(/\n\s*/g, ' ');
-    let results = await Code4i.runSQL(objQuery);
-    if (results.length === 0) {
-      return ` Spooled file ${splfName} in job ${qualifiedJobName} report number ${splfNum} was not found.`;
-    }
-    return String(results[0].DEVICE_TYPE);
-  }
   /**
-  * @param {string} name
-  * @param {string} library
-  * @param {string} type
-  * @returns {Promise<String>} a string with the count of spooled file for `name`
-  */
-  export async function getFilterSpooledFileCount(name: string, library: string,type: string, searchWord?: string): Promise<IBMiSplfCounts> {
-    let queryParm = ``;
-    if (type === 'USER') {
-      queryParm = `USER_NAME => '${name}'`;
-    } else if (type === 'OUTQ') {
-      queryParm = `USER_NAME=> '*ALL', OUTPUT_QUEUE => '${library}/${name}'`;
-    }
-    let objQuery = `select count(*) SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
-      from table (QSYS2.SPOOLED_FILE_INFO(${queryParm}) ) SPE 
-      where FILE_AVAILABLE = '*FILEEND' 
+   * Get extra Spooled File information, DEVICE_TYPE, needed for determining the open file extension or if Spooled File can be opened
+   * 
+   * @param {string[]} queues - one or more OUTQ names
+   * @param {string[]} queueLibrary - one or more OUTQ library names
+   * @param {string} spflName - optional, Spooled File name, use to filter results
+   * @param {string} qualifiedJobName - optional, Spooled File qualified job ID, use to filter results
+   * @param {string} spflNum - optional, Spooled File name+job sequence number, use to filter results
+   * @returns a promised array of type {@link IBMiSpooledFile}, only required entries plus `deviceType`
+   */
+  export async function getSpooledFileDeviceType(queues: string[], queueLibrarys: string[], splfNames?: string[], qualifiedJobName?: string, splfNum?: string): Promise<IBMiSpooledFile[]> {
+    const OBJS = queues.map(queue => `'${queue}'`).join(', ');
+    const OBJLIBS = queueLibrarys.map(queueLibrary => `'${queueLibrary}'`).join(', ');
+    const FILES = splfNames?.map(splfName => `'${splfName}'`).join(', ') || '';
+    const objQuery = `select OUTPUT_QUEUE_NAME, OUTPUT_QUEUE_LIBRARY_NAME, SPOOLED_FILE_NAME, JOB_NAME, FILE_NUMBER, DEVICE_TYPE
+      from QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC QE where OUTQLIB in (${OBJLIBS}) and OUTQ in (${OBJS}) 
+      ${FILES ? `and QE.SPOOLED_FILE_NAME in (${FILES})` : ``}
+      ${qualifiedJobName ? `and QE.JOB_NAME = '${qualifiedJobName}'` : ``}
+      ${splfNum ? `and QE.FILE_NUMBER = '${splfNum}'` : ``}
       `.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
+    let treeFilter: IBMiSpooledFile[] = [];
+    if (results.length >= 0) {
+      treeFilter = results.map(result => ({
+        name: String(result.SPOOLED_FILE_NAME),
+        number: String(result.FILE_NUMBER),
+        qualifiedJobName: String(result.JOB_NAME),
+        queueLibrary: String(result.OUTPUT_QUEUE_LIBRARY_NAME),
+        queue: String(result.OUTPUT_QUEUE_NAME),
+        deviceType: String(result.DEVICE_TYPE)
+      } as IBMiSpooledFile));
+    } else {
+      treeFilter = results.map(result => ({
+        name: '',
+        number: '',
+        qualifiedJobName: '',
+        queueLibrary: '',
+        queue: '',
+        deviceType: `Issues with obtaining spooled file device type information.`
+      } as IBMiSpooledFile));
+    }
+    return treeFilter;
+    // return String(results[0].DEVICE_TYPE);
+  }
+  /**
+   * Get extra Spooled File information, IBMiSplfCounts, for use mostly by the open with line spacing
+   * 
+   * @param {string} name - Filter name
+   * @param {string} library - Filter by library name
+   * @param {string} type - Filter by type, `USER` or `OUTQ`
+   * @param {string} searchWord - optional, Additional words used to filter results
+   * @returns a promised array of type, {@link IBMiSplfCounts} 
+  */
+  export async function getFilterSpooledFileCount(name: string, library: string, type: string, searchWord?: string): Promise<IBMiSplfCounts> {
+    let query = ``;
+    if (type === 'USER') {
+      query = `select count(*) SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
+        from table (QSYS2.SPOOLED_FILE_INFO(USER_NAME => '${name}') ) SPE 
+        where FILE_AVAILABLE = '*FILEEND' 
+        `.replace(/\n\s*/g, ' ');
+    } else if (type === 'OUTQ') {
+      query = `select NUMBER_OF_FILES SPLF_COUNT, 0 TOTAL_PAGES 
+      from QSYS2.OUTPUT_QUEUE_INFO 
+      where OUTPUT_QUEUE_NAME = '${name}' 
+      ${library !== `*LIBL` ? `and OUTPUT_QUEUE_NAME = '${library}'` : ``}
+      limit 1`.replace(/\n\s*/g, ' ');
+    }
+    let results = await Code4i.runSQL(query);
     if (results.length === 0) {
       return { numberOf: ` ${name} has no spooled files`, totalPages: `` };
     }
     return { numberOf: String(results[0].SPLF_COUNT), totalPages: String(results[0].TOTAL_PAGES) };
   }
   /**
-  * @param {string} name
-  * @param {string} library?
-  * @param {string} type?
-  * @returns a promised string for item.name text 
+   * Get values deemed too expensive to get with the main list of spooled files in the treeview. 
+   *  The return array also returns values for matching to in caller routines. 
+   * 
+   * @param {string[]} name one or more Filter names
+   * @param {string} library optional, Filter by library
+   * @param {string} type optional, Filter by type, `USER` or `OUTQ`
+   * @returns a promised array of type, {@link IBMISplfList} 
   */
-  export async function getFilterDescription(name: string, library?: string, type?: string): Promise<string | undefined> {
-    const objQuery = `select regexp_replace(UT.OBJTEXT,'Programmer - ','',1,0,'i') OBJECT_TEXT
-    from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => '${library?library:`*LIBL`}'
-                                      , OBJTYPELIST => '${type===`OUTQ`?`*OUTQ`:`*USRPRF,*MSGQ`}'
-                                      , OBJECT_NAME => '${name}') ) UT 
-    limit 1`.replace(/\n\s*/g, ' ');
-    let results = await Code4i.runSQL(objQuery);
-    if (results.length === 0) {
-      return ` I dont know where to find the text for ${name}`;
+  export async function getFilterDescription(names: string[], library?: string, type?: string): Promise<IBMISplfList[]> {
+    let OBJS = ``;
+    if (Array.isArray(names)) {
+      OBJS = names.map(name => `'${name}'`).join(', ');
+      library = !library && library !== '*LIBL' ? '*LIBL' : library || '*LIBL';
+    } else {
+      OBJS = `'${names}'`;
+      library = library || '*LIBL';
     }
-    const itemText: string = String(results[0].OBJECT_TEXT);
-    return itemText;
+    const objQuery = `select UT.OBJTEXT OBJECT_TEXT, OBJNAME, OBJLIB
+    from table ( QSYS2.OBJECT_STATISTICS(OBJECT_SCHEMA => '${library}'
+                                      , OBJTYPELIST => '${type === `OUTQ` ? `*OUTQ` : `*USRPRF,*MSGQ`}'
+                                      , OBJECT_NAME => '*ALL') ) UT where OBJNAME in (${OBJS})
+    `.replace(/\n\s*/g, ' ');
+    let results = await Code4i.runSQL(objQuery);
+    let treeFilter: IBMISplfList[] = [];
+    if (results.length >= 0) {
+      treeFilter = results.map(result => ({
+        library: String(result.OBJLIB),
+        name: String(result.OBJLIB),
+        text: String(result.OBJECT_TEXT || ""),
+      } as IBMISplfList));
+    } else {
+      treeFilter = names.map(name => ({
+        name: String(name),
+        text: ` I dont know where to find the text for ${name}`
+      } as IBMISplfList));
+    }
+    return treeFilter;
+  }
+  export async function updateNodeSpooledFileDeviceType(nodes: SpooledFiles[]): Promise<SpooledFiles[]> {
+    const modifiedNodes: SpooledFiles[] = [];
+    let deviceTypes: IBMiSpooledFile[];
+    const distinctNames: string[] = [...new Set(nodes.map(node => node.name))];
+    const distinctQueues: string[] = [...new Set(nodes.map(node => node.queue))];
+    const distinctLibraries: string[] = [...new Set(nodes.map(node => node.queueLibrary))];
+    if (nodes.length === 1) {
+      deviceTypes = await getSpooledFileDeviceType(distinctQueues, distinctLibraries, distinctNames
+                                                  ,nodes[0].qualifiedJobName, nodes[0].number );
+    } else {
+      deviceTypes = await getSpooledFileDeviceType(distinctQueues, distinctLibraries, distinctNames);
+    }
+    // for each node passed find if its Spooled file is among returned entries then update deviceType
+    for (const node of nodes) {
+      const SPLF = deviceTypes.find(dT => dT.name === node.name && dT.qualifiedJobName === node.qualifiedJobName && dT.number === node.number);
+      node.deviceType = SPLF?.deviceType || '*SCS';
+      modifiedNodes.push(node);
+    }
+    return modifiedNodes;
+
+  }
+  export async function updateSpooledFilePageSize(nodes: SpooledFiles[]): Promise<SpooledFiles[]> {
+    const modifiedNodes: SpooledFiles[] = [];
+    for (const node of nodes) {
+      node.pageLength = await getSpooledPageLength(node.name
+        , node.qualifiedJobName, node.number
+        , node.queue, node.queueLibrary);
+      modifiedNodes.push(node);
+    }
+    return modifiedNodes;
+  }
+  export async function updateSpooledFileDeviceType(nodes: IBMiSpooledFile[]): Promise<IBMiSpooledFile[]> {
+    const modifiedSpooledFiles: IBMiSpooledFile[] = [];
+    let deviceTypes: IBMiSpooledFile[];
+    const distinctNames: string[] = [...new Set(nodes.map(node => node.name))];
+    const distinctQueues: string[] = [...new Set(nodes.map(node => node.queue))];
+    const distinctLibraries: string[] = [...new Set(nodes.map(node => node.queueLibrary))];
+    if (nodes.length === 1) {
+      deviceTypes = await getSpooledFileDeviceType(distinctQueues, distinctLibraries, distinctNames
+                                                  ,nodes[0].qualifiedJobName, nodes[0].number );
+    } else {
+      deviceTypes = await getSpooledFileDeviceType(distinctQueues, distinctLibraries, distinctNames);
+    }
+    for (const node of nodes) {
+      const SPLF = deviceTypes.find(dT => dT.name === node.name && dT.qualifiedJobName === node.qualifiedJobName && dT.number === node.number);
+      node.deviceType = SPLF?.deviceType || '*SCS';
+      modifiedSpooledFiles.push(node);
+    }
+    return modifiedSpooledFiles;
   }
 
 }

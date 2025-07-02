@@ -8,7 +8,7 @@ import vscode, { l10n, TextDocumentShowOptions } from 'vscode';
 import { SplfFS } from "../src/filesystem/qsys/SplfFs";
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
 import { Code4i } from "./tools";
-import { IBMiSplf, IBMiSpooledFile, SplfOpenOptions } from './typings';
+import { IBMISplfList, IBMiSpooledFile, SplfOpenOptions } from './typings';
 import SPLFBrowser, { SpooledFileFilter, SpooledFiles } from './views/SplfsView';
 
 const writeFileAsync = util.promisify(fs.writeFile);
@@ -70,7 +70,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           const newUserSplfs = userInput.trim().toUpperCase().toUpperCase().split(`/`);
           const i = newUserSplfs.length;
           // Split value
-          const newEntry: IBMiSplf = { name: newUserSplfs[i - 1], library: i > 1 ? newUserSplfs[i - 1] : '*LIBL', type: 'USER' };
+          const newEntry: IBMISplfList = { name: newUserSplfs[i - 1], library: i > 1 ? newUserSplfs[i - 1] : '*LIBL', type: 'USER' };
 
           if (!SpooledFileConfig.includes(newEntry)) {
             SpooledFileConfig.push(newEntry);
@@ -104,7 +104,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           let newOUTQ = userInput.trim().toUpperCase().toUpperCase().split(`/`);
           const i = newOUTQ.length;
           // Split value
-          const newEntry: IBMiSplf = { name: newOUTQ[i - 1], library: i > 1 ? newOUTQ[i - 1] : '*LIBL', type: 'OUTQ' };
+          const newEntry: IBMISplfList = { name: newOUTQ[i - 1], library: i > 1 ? newOUTQ[i - 1] : '*LIBL', type: 'OUTQ' };
 
           if (!SpooledFileConfig.includes(newEntry)) {
             SpooledFileConfig.push(newEntry);
@@ -142,7 +142,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               if (result === l10n.t(`Yes`)) {
                 if (SpooledFileConfig) {
                 }
-                const index = SpooledFileConfig.findIndex((f: IBMiSplf) => f.name === removeItem);
+                const index = SpooledFileConfig.findIndex((f: IBMISplfList) => f.name === removeItem);
                 if (index > -1) {
                   SpooledFileConfig.splice(index, 1);
                   config.SpooledFileConfig = SpooledFileConfig;
@@ -161,7 +161,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       const config = getConfig();
 
       config.SpooledFileConfig.sort(
-        (filter1: IBMiSplf, filter2: IBMiSplf) => filter1.name.toLowerCase().localeCompare(filter2.name.toLowerCase())
+        (filter1: IBMISplfList, filter2: IBMISplfList) => filter1.name.toLowerCase().localeCompare(filter2.name.toLowerCase())
       );
       try {
 
@@ -248,7 +248,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               name: node.parent.name,
               library: node.parent.library,
               type: node.parent.type,
-            } as IBMiSplf;
+            } as IBMISplfList;
             objects = await IBMiContentSplf.getSpooledFileFilter(treeFilter, node.sort, node.name);
           }
           try {
@@ -326,7 +326,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               name: node.parent.name,
               library: node.parent.library,
               type: node.parent.type,
-            } as IBMiSplf;
+            } as IBMISplfList;
             objects = await IBMiContentSplf.getSpooledFileFilter(treeFilter, node.sort, undefined, node.parent.filter);
           }
           try {
@@ -564,7 +564,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       let splfContent: string = ``;
       let localFileUri: vscode.Uri;
       let localFileUris: vscode.Uri[] = [];
-      nodes = await updateSpooledFileDeviceType(nodes );
+      nodes = await IBMiContentSplf.updateNodeSpooledFileDeviceType(nodes);
       for (let node of nodes) {
         if (node.deviceType === '*AFPDS') {options.fileExtension = 'pdf';}
         if (node.deviceType === '*USERASCII') {
@@ -651,7 +651,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         saveToPath: options?.saveToPath || os.tmpdir(),
         tempPath: true
       };
-      nodes = await updateSpooledFilePageSize(nodes);
+      nodes = await IBMiContentSplf.updateSpooledFilePageSize(nodes);
       vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing", node, nodes, options)
         .then(async (localFileUris) => {
           try {
@@ -763,19 +763,19 @@ function getContent() {
 }
 async function run_on_connection(): Promise<void> {
   try {
-    // look for old format style config and reformat into IBMiSplf object type
+    // look for old format style config and reformat into IBMISplfList object type
     const config = getConfig();
     let oldFilterConfig: string[] = config.usersSpooledFile;
     if (!oldFilterConfig) { return; }
     if (oldFilterConfig) {
-      let SpooledFileConfig: IBMiSplf[] = [];
+      let SpooledFileConfig: IBMISplfList[] = [];
       if (config.SpooledFileConfig) {
         SpooledFileConfig = config.SpooledFileConfig;
       }
       oldFilterConfig.forEach(filter => {
         const item = filter.trim().toUpperCase().toUpperCase().split(`/`);
         const i = item.length;
-        const newEntry: IBMiSplf = { name: item[i - 1], library: i > 1 ? item[i - 1] : '*LIBL', type: 'USER' };
+        const newEntry: IBMISplfList = { name: item[i - 1], library: i > 1 ? item[i - 1] : '*LIBL', type: 'USER' };
         let isPresent = false;
         if (SpooledFileConfig) {
           isPresent = SpooledFileConfig.some(obj => obj.library === newEntry.library && obj.name === newEntry.name && obj.type === newEntry.type);
@@ -813,33 +813,4 @@ function generateSequencedFileName(uri: vscode.Uri): string {
     sequence++;
   }
   return path.join(dir, sequenceName);
-}
-async function updateSpooledFilePageSize(nodes: SpooledFiles[]): Promise<SpooledFiles[]> {
-  const modifiedNodes: SpooledFiles[] = [];
-  for (const node of nodes) {
-    node.pageLength = await IBMiContentSplf.getSpooledPageLength(node.name
-                                                                , node.qualifiedJobName, node.number
-                                                                , node.queue, node.queueLibrary);
-    modifiedNodes.push(node);
-  }
-  return modifiedNodes;
-}
-async function updateSpooledFileDeviceType(nodes: SpooledFiles[]|IBMiSpooledFile[]): Promise<SpooledFiles[]|IBMiSpooledFile[]> {
-  const modifiedNodes: SpooledFiles[] = [];
-  const modifiedSpooledFiles: IBMiSpooledFile[] = [];
-  for (const node of nodes) {
-    const deviceType = await IBMiContentSplf.getSpooledFileDeviceType(node.name
-                                                                , node.qualifiedJobName, node.number
-                                                                , node.queue, node.queueLibrary);
-    if (node instanceof SpooledFiles) {
-      node.deviceType = deviceType;
-      modifiedNodes.push(node);
-    }
-    else 
-    {
-      node.deviceType = deviceType;
-      modifiedSpooledFiles.push(node);
-    }
-  }
-  return modifiedNodes||modifiedSpooledFiles;
 }

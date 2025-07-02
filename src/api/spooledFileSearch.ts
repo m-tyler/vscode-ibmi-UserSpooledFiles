@@ -6,7 +6,7 @@ import { CommandResult } from "@halcyontech/vscode-ibmi-types";
 import { Code4i, whereIsCustomFunc} from "../tools";
 import { isProtectedFilter } from '../filesystem/qsys/SplfFs';
 import { IBMiContentSplf } from "../api/IBMiContentSplf";
-import { FuncInfo, IBMiSplf } from '../typings';
+import { FuncInfo, IBMISplfList, IBMiSpooledFile } from '../typings';
 
 const tmpFile = util.promisify(tmp.file);
 const writeFileAsync = util.promisify(fs.writeFile);
@@ -25,7 +25,7 @@ export namespace SplfSearch {
     content: string
   }
 
-  export async function searchSpooledFiles( searchTerm: string, filter: IBMiSplf, splfName?: string, searchWords?: string): Promise<Result[]> {
+  export async function searchSpooledFiles( searchTerm: string, filter: IBMISplfList, splfName?: string, searchWords?: string): Promise<Result[]> {
     const connection = Code4i.getConnection();
     const config = Code4i.getConfig();
     const content = Code4i.getContent();
@@ -45,8 +45,9 @@ export namespace SplfSearch {
               name: filter.name,
               library: filter.library,
               type: filter.type,
-            } as IBMiSplf;
-        const objects = await IBMiContentSplf.getSpooledFileFilter( treeFilter, { order: "date", ascending: false }, splfName, searchWords);
+            } as IBMISplfList;
+        let objects = await IBMiContentSplf.getSpooledFileFilter( treeFilter, { order: "date", ascending: false }, splfName, searchWords);
+        objects = await IBMiContentSplf.updateSpooledFileDeviceType(objects);
         const workFileFormat = {
           user: objects[0].jobUser,
           queue: objects[0].queue,
@@ -68,7 +69,7 @@ export namespace SplfSearch {
         let insRows: string[] = [],
           sequence = 0;
         for (let i = 0; i < objects.length; i++) {
-          // TODO: for each item, we need to discover if SPLF data is *AFPDS and skip if so
+          if (objects[i].deviceType !== '*SCS') {continue;} // We can only search through *SCS files
           sequence = decimalSequence ? ((i + 1) / 100) : i + 1;
           insRows.push(
             `('${objects[i].jobUser}', '${objects[i].queue}', '${objects[i].qualifiedJobName}', '${objects[i].name}', '${objects[i].number}')`
