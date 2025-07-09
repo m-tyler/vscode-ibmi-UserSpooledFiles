@@ -29,7 +29,7 @@ export namespace IBMiContentSplf {
     const connection = Code4i.getConnection();
 
     sort.order = sort.order || 'date';
-    if (!sort.ascending) {sort.ascending = false;} 
+    if (!sort.ascending) { sort.ascending = false; }
     resultLimit = resultLimit || 10000;
     let queryParm = ``;
     if (treeFilter.type === 'USER') {
@@ -228,21 +228,22 @@ export namespace IBMiContentSplf {
     if (results.length >= 0) {
       treeFilter = results.map(result => ({
         name: String(result.SPOOLED_FILE_NAME),
-        number: String(result.FILE_NUMBER),
+        number: result.FILE_NUMBER,
         qualifiedJobName: String(result.JOB_NAME),
         queueLibrary: String(result.OUTPUT_QUEUE_LIBRARY_NAME),
         queue: String(result.OUTPUT_QUEUE_NAME),
         deviceType: String(result.DEVICE_TYPE)
       } as IBMiSpooledFile));
     } else {
-      treeFilter = results.map(result => ({
-        name: '',
-        number: '',
-        qualifiedJobName: '',
-        queueLibrary: '',
-        queue: '',
-        deviceType: `Issues with obtaining spooled file device type information.`
-      } as IBMiSpooledFile));
+      treeFilter = [];
+      // treeFilter = results.map(result => ({
+      //   name: '',
+      //   number: 0,
+      //   qualifiedJobName: '',
+      //   queueLibrary: '',
+      //   queue: '',
+      //   deviceType: `Issues with obtaining spooled file device type information.`
+      // } as IBMiSpooledFile));
     }
     return treeFilter;
     // return String(results[0].DEVICE_TYPE);
@@ -318,19 +319,26 @@ export namespace IBMiContentSplf {
   export async function updateNodeSpooledFileDeviceType(nodes: SpooledFiles[]): Promise<SpooledFiles[]> {
     const modifiedNodes: SpooledFiles[] = [];
     let deviceTypes: IBMiSpooledFile[];
-    const distinctNames: string[] = [...new Set(nodes.map(node => node.name))];
-    const distinctQueues: string[] = [...new Set(nodes.map(node => node.queue))];
-    const distinctLibraries: string[] = [...new Set(nodes.map(node => node.queueLibrary))];
-    if (nodes.length === 1) {
+    const filteredNodes: IBMiSpooledFile[] = nodes.filter(node => node.deviceType === undefined || node.deviceType === ``);
+    const distinctNames: string[] = [...new Set(filteredNodes.map(node => node.name))];
+    const distinctQueues: string[] = [...new Set(filteredNodes.map(node => node.queue))];
+    const distinctLibraries: string[] = [...new Set(filteredNodes.map(node => node.queueLibrary))];
+    if (filteredNodes.length === 1) {
       deviceTypes = await getSpooledFileDeviceType(distinctQueues, distinctLibraries, distinctNames
-                                                  ,nodes[0].qualifiedJobName, nodes[0].number );
-    } else {
+        , nodes[0].qualifiedJobName, nodes[0].number);
+    } else if (filteredNodes.length > 1) {
       deviceTypes = await getSpooledFileDeviceType(distinctQueues, distinctLibraries, distinctNames);
+    } else {
+      return [];
     }
     // for each node passed find if its Spooled file is among returned entries then update deviceType
     for (const node of nodes) {
-      const SPLF = deviceTypes.find(dT => dT.name === node.name && dT.qualifiedJobName === node.qualifiedJobName && dT.number === node.number);
-      node.deviceType = SPLF?.deviceType || '*SCS';
+      if (node.deviceType.length === 0) {
+        const SPLF = deviceTypes.find(dT => {
+          return dT.name === node.name && dT.qualifiedJobName === node.qualifiedJobName && dT.number === node.number;
+        });
+        node.deviceType = SPLF?.deviceType || node.deviceType || '*SCS';
+      }
       modifiedNodes.push(node);
     }
     return modifiedNodes;
@@ -349,18 +357,19 @@ export namespace IBMiContentSplf {
   export async function updateSpooledFileDeviceType(nodes: IBMiSpooledFile[]): Promise<IBMiSpooledFile[]> {
     const modifiedSpooledFiles: IBMiSpooledFile[] = [];
     let deviceTypes: IBMiSpooledFile[];
-    const distinctNames: string[] = [...new Set(nodes.map(node => node.name))];
-    const distinctQueues: string[] = [...new Set(nodes.map(node => node.queue))];
-    const distinctLibraries: string[] = [...new Set(nodes.map(node => node.queueLibrary))];
-    if (nodes.length === 1) {
+    const filteredNodes: IBMiSpooledFile[] = nodes.filter(node => node.deviceType === undefined || node.deviceType === ``);
+    const distinctNames: string[] = [...new Set(filteredNodes.map(node => node.name))];
+    const distinctQueues: string[] = [...new Set(filteredNodes.map(node => node.queue))];
+    const distinctLibraries: string[] = [...new Set(filteredNodes.map(node => node.queueLibrary))];
+    if (filteredNodes.length === 1) {
       deviceTypes = await getSpooledFileDeviceType(distinctQueues, distinctLibraries, distinctNames
-                                                  ,nodes[0].qualifiedJobName, nodes[0].number );
+        , nodes[0].qualifiedJobName, nodes[0].number);
     } else {
       deviceTypes = await getSpooledFileDeviceType(distinctQueues, distinctLibraries, distinctNames);
     }
     for (const node of nodes) {
-      const SPLF = deviceTypes.find(dT => dT.name === node.name && dT.qualifiedJobName === node.qualifiedJobName && dT.number === node.number);
-      node.deviceType = SPLF?.deviceType || '*SCS';
+      const SPLF = deviceTypes.find(dT => (node.deviceType === undefined || node.deviceType === ``) && dT.name === node.name && dT.qualifiedJobName === node.qualifiedJobName && dT.number === node.number);
+      node.deviceType = SPLF?.deviceType || node.deviceType || '*SCS';
       modifiedSpooledFiles.push(node);
     }
     return modifiedSpooledFiles;

@@ -564,8 +564,8 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       let splfContent: string = ``;
       let localFileUri: vscode.Uri;
       let localFileUris: vscode.Uri[] = [];
-      nodes = await IBMiContentSplf.updateNodeSpooledFileDeviceType(nodes);
-      for (let node of nodes) {
+      const newNodes = await IBMiContentSplf.updateNodeSpooledFileDeviceType(nodes);
+      for (let node of newNodes) {
         if (node.deviceType === '*AFPDS') {options.fileExtension = 'pdf';}
         if (node.deviceType === '*USERASCII') {
           vscode.window.showWarningMessage(l10n.t(`Spooled File {0} in {1} is not eligible for operation.`,node.name, node.queue));
