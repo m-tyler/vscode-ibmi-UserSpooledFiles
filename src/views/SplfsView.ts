@@ -130,8 +130,9 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
       item.tooltip.supportHtml = true;
     } else if (item instanceof SpooledFiles) {
       // console.log(`in resolveTreeItem, 'item' is an instance of SpooledFiles`);
-      const info = await IBMiContentSplf.getSpooledFileDeviceType( [item.queue], [item.queueLibrary], [item.name]
+      const info = await IBMiContentSplf.getSpooledFileDeviceType( [item.queue], [item.queueLibrary], [item.name], [item.jobUser]
                                                                     , item.qualifiedJobName, item.number );
+      item.pageLength = await IBMiContentSplf.getSpooledPageLength( item.queue, item.queueLibrary, item.name, item.qualifiedJobName, item.number );                                                                    
       item.deviceType = info[0].deviceType||'*SCS';
       item.tooltip = new vscode.MarkdownString(`<table>`
       .concat(`<thead>${item.path.split(`/`)[2]}</thead><hr>`)
@@ -140,6 +141,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
       .concat(item.userData ? `<tr><td>${l10n.t(`UserData:`)}</td><td>&nbsp;${item.userData}</td></tr>` : ``)
       .concat(item.creationTimestamp ? `<tr><td>${l10n.t(`Created:`)}</td><td>&nbsp;${item.creationTimestamp}</td></tr>` : ``)
       .concat(item.size ? `<tr><td>${l10n.t(`Size in bytes:`)}</td><td>&nbsp;${item.size}</td></tr>` : ``)
+      .concat(item.pageLength ? `<tr><td>${l10n.t(`Page Length:`)}</td><td>&nbsp;${item.pageLength}</td></tr>` : ``)
       .concat(item.formType ? `<tr><td>${l10n.t(`Form Type:`)}</td><td>&nbsp;${item.formType}</td></tr>` : ``)
       .concat(item.queue ? `<tr><td>${l10n.t(`Output Queue:`)}</td><td>&nbsp;${item.queueLibrary, item.queue}</td></tr>` : ``)
       .concat(item.deviceType ? `<tr><td>${l10n.t(`Device Type:`)}</td><td>&nbsp;${item.deviceType}</td></tr>` : ``)

@@ -117,7 +117,7 @@ export function buildSpooledFileNamefromPattern(filterType: string, splf: IBMiSp
   let namePattern: string = splfBrowserConfig.get<string>('spooledFileNamePattern') || '';
   if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
   // pattern values are separated by commas.  
-  const patterns = namePattern.split(',');
+  const patterns = namePattern.split(/,\s*/);
   // append pattern to end of passed in name.
   patterns.forEach(element => {
     if (counter > 0) {
@@ -184,7 +184,7 @@ export function breakUpSpooledFileName(pPath: string): Map<string,string> {
   if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
   
   // pattern values are separated by commas.  
-  const patterns = namePattern.split(',');
+  const patterns = namePattern.split(/,\s*/);
   const pathParts = pPath.split('/');
   const nameParts = pathParts[2].split(/[~.]/);
   

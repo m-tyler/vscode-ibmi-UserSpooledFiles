@@ -1,4 +1,0 @@
-*  build name pattern functions
-  *  one to build name string
-  *  one to undo name string
-* detect spooled file device type then use this for the file extension.

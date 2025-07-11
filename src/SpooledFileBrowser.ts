@@ -4,6 +4,7 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import util from "util";
+ import sanitize from 'sanitize-filename';
 import vscode, { l10n, TextDocumentShowOptions } from 'vscode';
 import { SplfFS } from "../src/filesystem/qsys/SplfFs";
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
@@ -581,7 +582,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path||'', options);
         });
         const tmpExt = path.extname(node.path);
-        const fileName = path.basename(node.path, tmpExt);
+        const fileName = sanitize( path.basename(node.path, tmpExt)); //TODO: add name sanitation
         let localFilePathBase: string = '';
         if (!options.saveToPath) {
           if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length !== 1) {

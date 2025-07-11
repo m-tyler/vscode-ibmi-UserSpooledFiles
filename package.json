@@ -35,8 +35,8 @@
         "properties": {
           "vscode-ibmi-splfbrowser.spooledFileNamePattern": {
             "type": "string",
-            "markdownDescription": "Additional spooled file name mapping pattern for when spooled files are opened or downloaded.\n\nValid values to choose from; \n- `name` \n- `number` \n- `status` \n- `creationTimestamp` \n- `userData` \n- `size` \n- `totalPages` \n- `pageLength` \n- `qualifiedJobName` \n- `jobName` \n- `jobUser` \n- `jobNumber` \n- `formType` \n- `queueLibrary` \n- `queue` \n\nSeparate selections with commas (,).",
-            "default":"name,jobName,jobUser,jobNumber,number"
+            "markdownDescription": "Additional spooled file name mapping pattern for when spooled files are opened or downloaded.\n\nValid values to choose from; \n- `name` \n- `number` \n- `status` \n- `creationTimestamp` \n- `userData` \n- `size` \n- `totalPages` \n- `pageLength` \n- `qualifiedJobName` \n- `jobName` \n- `jobUser` \n- `jobNumber` \n- `formType` \n- `queueLibrary` \n- `queue` \n\nSeparate selections with commas (,). You must reload the spooled file list for these changes to take affect.",
+            "default": "name, jobName, jobUser, jobNumber, number"
           }
         }
       }
@@ -511,6 +511,7 @@
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "i": "^0.3.7",
     "npm": "^10.9.3",
+    "sanitize-filename": "^1.6.3",
     "tmp": "^0.2.1"
   }
 }
