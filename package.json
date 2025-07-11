@@ -1,8 +1,8 @@
 {
   "name": "vscode-ibmi-userspooledfiles",
-  "displayName": "Code for IBM i User Spooled Files",
-  "description": "Tools to view and manage user spooled files on IBM i",
-  "version": "1.0.0",
+  "displayName": "Code for IBM i Spooled Files",
+  "description": "Tools to view and manage spooled files on IBM i",
+  "version": "1.1.0-dev",
   "preview": true,
   "license": "MIT",
   "engines": {
@@ -29,11 +29,23 @@
   "main": "./dist/extension.js",
   "l10n": "./l10n",
   "contributes": {
+    "configuration": [
+      {
+        "title": "Code for IBM i Spooled Files",
+        "properties": {
+          "vscode-ibmi-splfbrowser.spooledFileNamePattern": {
+            "type": "string",
+            "markdownDescription": "Additional spooled file name mapping pattern for when spooled files are opened or downloaded.\n\nValid values to choose from; \n- `name` \n- `number` \n- `status` \n- `creationTimestamp` \n- `userData` \n- `size` \n- `totalPages` \n- `pageLength` \n- `qualifiedJobName` \n- `jobName` \n- `jobUser` \n- `jobNumber` \n- `formType` \n- `queueLibrary` \n- `queue` \n\nSeparate selections with commas (,). You must reload the spooled file list for these changes to take affect.",
+            "default": "name, jobName, jobUser, jobNumber, number"
+          }
+        }
+      }
+    ],
     "viewsContainers": {
       "activitybar": [
         {
           "id": "SpooledFile-search",
-          "title": "User Spooled Files",
+          "title": "Spooled Files",
           "icon": "$(files)"
         }
       ]
@@ -42,7 +54,7 @@
       "ibmi-explorer": [
         {
           "id": "splfBrowser",
-          "name": "User SPLF Browser",
+          "name": "Spooled File Browser",
           "when": "code-for-ibmi:connected && vscode-ibmi-splfbrowser:splfBrowserDisabled !== true ",
           "visibility": "collapsed",
           "icon": ""
@@ -85,8 +97,13 @@
         },
         {
           "command": "vscode-ibmi-splfbrowser.refreshSPLFBrowser",
-          "group": "navigation@1",
-          "when": "view == splfBrowser"
+          "when": "view == splfBrowser",
+          "group": "navigation@1"
+        },
+        {
+          "command": "vscode-ibmi-splfbrowser.addOUTQSpooledFileFilter",
+          "when": "view == splfBrowser",
+          "group": "navigation@1"
         },
         {
           "command": "vscode-ibmi-splfbrowser.addUserSpooledFileFilter",
@@ -94,7 +111,7 @@
           "group": "navigation@1"
         },
         {
-          "command": "vscode-ibmi-splfbrowser.sortUserSpooledFileFilter",
+          "command": "vscode-ibmi-splfbrowser.sortSpooledFileFilter",
           "when": "view == splfBrowser",
           "group": "navigation@1"
         }
@@ -129,17 +146,17 @@
       "view/item/context": [
         {
           "command": "vscode-ibmi-splfbrowser.refreshSPLFBrowser",
-          "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
+          "when": "view == splfBrowser && viewItem =~ /^splflist.*$/",
           "group": "inline@1"
         },
         {
           "command": "vscode-ibmi-splfbrowser.filterSpooledFiles",
-          "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
+          "when": "view == splfBrowser && viewItem =~ /^splflist.*$/",
           "group": "inline@2"
         },
         {
-          "command": "vscode-ibmi-splfbrowser.deleteUserSpooledFileFilter",
-          "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
+          "command": "vscode-ibmi-splfbrowser.deleteSpooledFileFilter",
+          "when": "view == splfBrowser && viewItem =~ /^splflist.*$/",
           "group": "inline@3"
         },
         {
@@ -149,22 +166,22 @@
         },
         {
           "command": "vscode-ibmi-splfbrowser.filterSpooledFiles",
-          "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
+          "when": "view == splfBrowser && viewItem =~ /^splflist.*$/",
           "group": "4_splfuser@1"
         },
         {
           "command": "vscode-ibmi-splfbrowser.searchSpooledFiles",
-          "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
+          "when": "view == splfBrowser && viewItem =~ /^splflist.*$/",
           "group": "4_splfuser@2"
         },
         {
-          "command": "vscode-ibmi-splfbrowser.deleteUserSpooledFileFilter",
-          "when": "view == splfBrowser && viewItem =~ /^splfuser.*$/",
+          "command": "vscode-ibmi-splfbrowser.deleteSpooledFileFilter",
+          "when": "view == splfBrowser && viewItem =~ /^splflist.*$/",
           "group": "5_splfuser@1"
         },
         {
           "command": "vscode-ibmi-splfbrowser.deleteUserSpooledFiles",
-          "when": "view == splfBrowser && viewItem =~ /^splfuser$/",
+          "when": "view == splfBrowser && viewItem =~ /^splflist$/",
           "group": "5_splfuser@2"
         },
         {
@@ -227,7 +244,7 @@
           "when": "never"
         },
         {
-          "command": "vscode-ibmi-splfbrowser.sortUserSpooledFileFilter",
+          "command": "vscode-ibmi-splfbrowser.sortSpooledFileFilter",
           "when": "never"
         },
         {
@@ -263,8 +280,7 @@
           "when": "never"
         },
         {
-          "command": "vscode-ibmi-splfbrowser.searchSpooledFiles",
-          "when": "never"
+          "command": "vscode-ibmi-splfbrowser.searchSpooledFiles"
         },
         {
           "command": "vscode-ibmi-splfbrowser.revealSPLFBrowser",
@@ -310,13 +326,20 @@
       },
       {
         "command": "vscode-ibmi-splfbrowser.addUserSpooledFileFilter",
-        "title": "add Spooled File Filter",
+        "title": "add User Spooled File Filter",
+        "category": "IBM i SPLF",
+        "enablement": "code-for-ibmi:connected == true",
+        "icon": "$(person-add)"
+      },
+      {
+        "command": "vscode-ibmi-splfbrowser.addOUTQSpooledFileFilter",
+        "title": "add OUTQ Spooled File Filter",
         "category": "IBM i SPLF",
         "enablement": "code-for-ibmi:connected == true",
         "icon": "$(add)"
       },
       {
-        "command": "vscode-ibmi-splfbrowser.deleteUserSpooledFileFilter",
+        "command": "vscode-ibmi-splfbrowser.deleteSpooledFileFilter",
         "title": "Delete Spooled File Filter",
         "category": "IBM i SPLF",
         "enablement": "code-for-ibmi:connected == true",
@@ -330,7 +353,7 @@
         "icon": "$(trash)"
       },
       {
-        "command": "vscode-ibmi-splfbrowser.sortUserSpooledFileFilter",
+        "command": "vscode-ibmi-splfbrowser.sortSpooledFileFilter",
         "title": "Sort filters",
         "category": "IBM i SPLF",
         "enablement": "code-for-ibmi:connected == true",
@@ -431,7 +454,7 @@
       {
         "command": "vscode-ibmi-splfbrowser.revealSPLFBrowser",
         "enablement": "code-for-ibmi:connected",
-        "title": "Reveal in User SPLF Browser",
+        "title": "Reveal in Spooled File Browser",
         "category": "IBM i SPLF"
       },
       {
@@ -462,7 +485,7 @@
     "test": "node ./out/test/runTest.js"
   },
   "devDependencies": {
-    "@halcyontech/vscode-ibmi-types": "^2.15.3",
+    "@halcyontech/vscode-ibmi-types": "^2.16.2",
     "@types/glob": "^7.2.0",
     "@types/mocha": "^9.1.1",
     "@types/node": "16.x",
@@ -487,7 +510,8 @@
     "@types/tmp": "^0.2.3",
     "@vscode/webview-ui-toolkit": "^1.4.0",
     "i": "^0.3.7",
-    "npm": "^10.4.0",
+    "npm": "^10.9.3",
+    "sanitize-filename": "^1.6.3",
     "tmp": "^0.2.1"
   }
 }

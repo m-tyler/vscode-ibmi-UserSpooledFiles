@@ -1,6 +1,6 @@
 import { stringify, parse, ParsedUrlQueryInput, ParsedUrlQuery } from "querystring";
 import vscode, { FilePermission, l10n } from "vscode";
-import { Code4i, } from "../../tools";
+import { Code4i, buildSpooledFileNamefromPattern } from "../../tools";
 import { IBMiSpooledFile, SplfOpenOptions } from "../../typings";
 import { IBMiContentSplf } from "../../api/IBMiContentSplf";
 import fs from 'fs';
@@ -9,8 +9,12 @@ import util from 'util';
 
 const writeFileAsync = util.promisify(fs.writeFile);
 
-export function getSpooledFileUri(splf: IBMiSpooledFile, options?: SplfOpenOptions) {
-  return getUriFromPath(`${splf.user}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.jobUser}~${splf.jobNumber}~${splf.number}.splf`, options);
+export function getSpooledFileUri(filterType:string, splf: IBMiSpooledFile, options?: SplfOpenOptions) {
+  let path = buildSpooledFileNamefromPattern( filterType, splf );
+  if (path.length === 0) {
+    path =`${splf.jobUser}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.jobUser}~${splf.jobNumber}~${splf.number}`;
+  }
+  return getUriFromPath(`${path}.${options?.fileExtension?options?.fileExtension:'splf'}`, options);
 }
 export function getUriFromPathSplf(path: string, options?: SplfOpenOptions) {
   return getUriFromPath(path, options);
@@ -65,13 +69,6 @@ export class SplfFS implements vscode.FileSystemProvider {
     const contentApi = Code4i.getContent();
     const connection = Code4i.getConnection();
     if (connection && contentApi) {
-      //           0         1            2             3  a          b                c                d                  e       
-      // path: `spooledfile://${splf.user}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.job_user}~${splf.jobNumber}~${splf.number}.splf``,
-      const lpath = uri.path.split(`/`);
-      const lfilename = lpath[3].split(`~`);
-      const qualifiedJobName = lfilename[3] + '/' + lfilename[2] + '/' + lfilename[1];
-      const splfNumber = lfilename[4].replace(`.splf`, ``);
-      const name = lfilename[0];
       const queryStrings: ParsedUrlQuery = parse(uri.query);
       const options: SplfOpenOptions = {
         readonly: queryStrings.ReadOnly||`true` ? true: false,
@@ -79,7 +76,7 @@ export class SplfFS implements vscode.FileSystemProvider {
         fileExtension: `splf`,
         saveToPath: os.tmpdir()
       };
-      const spooledFileContent = await IBMiContentSplf.downloadSpooledFileContent(uri.path, name, qualifiedJobName, splfNumber, options);
+      const spooledFileContent = await IBMiContentSplf.downloadSpooledFileContent(uri.path, options);
       if (spooledFileContent !== undefined) {
         return new Uint8Array(Buffer.from(spooledFileContent, `utf8`));
       }

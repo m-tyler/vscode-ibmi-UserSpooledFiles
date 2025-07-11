@@ -1,27 +1,19 @@
 import type { MemberParts } from '@halcyontech/vscode-ibmi-types/api/IBMi';
+import { FilterType } from '@halcyontech/vscode-ibmi-types/api/Filter';
 import { IBMiMember } from '@halcyontech/vscode-ibmi-types';
-import { CodeForIBMi, CommandResult, RemoteCommand } from '@halcyontech/vscode-ibmi-types';
+import { CommandResult, RemoteCommand, IBMiObject } from '@halcyontech/vscode-ibmi-types';
+import { SortOrder } from '@halcyontech/vscode-ibmi-types/api/IBMiContent';
 import { Tools } from '@halcyontech/vscode-ibmi-types/api/Tools';
-import { Extension, ExtensionContext } from "vscode";
-import { FuncInfo } from './typings';
+import vscode from "vscode";
+import { FuncInfo, IBMiSpooledFile } from './typings';
 import { posix } from "path";
 import { loadBase, getBase } from './base';
 
 
 export namespace Code4i {
-  export async function initialize(context: ExtensionContext) {
+  export async function initialize(context: vscode.ExtensionContext) {
     loadBase(context);
   }
-  // export async function initialize() {
-  //   baseExtension = (extensions ? extensions.getExtension(`halcyontechltd.code-for-ibmi`) : undefined);
-  //   if (baseExtension) {
-  //     codeForIBMi = (baseExtension.isActive ? baseExtension.exports : await baseExtension.activate());
-  //   }
-  //   else {
-  //     throw new Error("halcyontechltd.code-for-ibmi not found or cannot be activated");
-  //   }
-  // }
-
   export function getInstance() {
     return getBase()!.instance;
   }
@@ -43,6 +35,17 @@ export namespace Code4i {
   export function parserMemberPath(string: string, checkExtension?: boolean): MemberParts {
     return getInstance().getConnection().parserMemberPath(string, checkExtension);
   }
+  export function getObjectList(filters: {
+    library: string;
+    object?: string;
+    types?: string[];
+    filterType?: FilterType;
+  }, sortOrder?: SortOrder): Promise<IBMiObject[]> {
+    return getInstance().getConnection().getContent().getObjectList(filters, sortOrder);
+  }
+  // export async function getUserProfileText(user: string): Promise<string | undefined> {
+  //   return getInstance().getConnection().getContent().getUserProfileText(user);
+  // }
   export function sysNameInLocal(string: string): string {
     return getInstance().getConnection().sysNameInLocal(string);
   }
@@ -64,7 +67,7 @@ export namespace Code4i {
   export function makeid(length?: number) {
     return getBase()!.tools.makeid(length);
   }
-  export function getLibraryIAsp(library: string):string | undefined {
+  export function getLibraryIAsp(library: string): string | undefined {
     return getConnection().getLibraryIAsp(library);
   }
   export function getCurrentIAspName(): string | undefined {
@@ -77,9 +80,9 @@ export namespace Code4i {
 
 export const IBMI_OBJECT_NAME = /^([\w$#@][\w\d$#@_.]{0,9})$/i;
 
-export function getQSYSObjectPath(library: string, name: string, type: string, member?: string, iasp?: string) {
-  return `${iasp ? `/${iasp.toUpperCase()}` : ''}/QSYS.LIB/${library.toUpperCase()}.LIB/${name.toUpperCase()}.${type.toUpperCase()}${member ? `/${member.toUpperCase()}.MBR` : ''}`;
-}
+// export function getQSYSObjectPath(library: string, name: string, type: string, member?: string, iasp?: string) {
+//   return `${iasp ? `/${iasp.toUpperCase()}` : ''}/QSYS.LIB/${library.toUpperCase()}.LIB/${name.toUpperCase()}.${type.toUpperCase()}${member ? `/${member.toUpperCase()}.MBR` : ''}`;
+// }
 
 // export function makeid(length?: number) {
 //   return codeForIBMi.tools.makeid(length);
@@ -98,9 +101,105 @@ export function nthIndex(aString: string, pattern: string, n: number) {
   }
   return index;
 }
-export async function checkObject(library: string, name: string, type: string) {
-  return await Code4i.getContent().checkObject({ library, name, type });
-};
+// export async function checkObject(library: string, name: string, type: string) {
+//   return await Code4i.getContent().checkObject({ library, name, type });
+// };
+export function buildSpooledFileNamefromPattern(filterType: string, splf: IBMiSpooledFile): string {
+  let newName = ``;
+  if (filterType === 'OUTQ') {
+    newName = `${splf.queueLibrary}/${splf.queue}/`;
+  } else {
+    newName = `${splf.jobUser}/${splf.queue}/`;
+  }
+  let counter = 0;
+  // get from config
+  const splfBrowserConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
+  let namePattern: string = splfBrowserConfig.get<string>('spooledFileNamePattern') || '';
+  if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
+  // pattern values are separated by commas.  
+  const patterns = namePattern.split(/,\s*/);
+  // append pattern to end of passed in name.
+  patterns.forEach(element => {
+    if (counter > 0) {
+      newName += '~';
+    }
+    counter++;
+    switch (element) {
+    case `name`:
+      newName += splf.name;
+      break;
+    case `number`:
+      newName += splf.number;
+      break;
+    case `status`:
+      newName += splf.status;
+      break;
+    case `creationTimestamp`:
+      newName += splf.creationTimestamp;
+      break;
+    case `userData`:
+      newName += splf.userData;
+      break;
+    case `size`:
+      newName += splf.size;
+      break;
+    case `totalPages`:
+      newName += splf.totalPages;
+      break;
+    case `pageLength`:
+      newName += splf.pageLength;
+      break;
+    case `qualifiedJobName`:
+      newName += splf.qualifiedJobName.replace(/[/]/, '-');
+      break;
+    case `jobName`:
+      newName += splf.jobName;
+      break;
+    case `jobUser`:
+      newName += splf.jobUser;
+      break;
+    case `jobNumber`:
+      newName += splf.jobNumber;
+      break;
+    case `formType`:
+      newName += splf.formType;
+      break;
+    case `queueLibrary`:
+      newName += splf.queueLibrary;
+      break;
+    case `queue`:
+      newName += splf.queue;
+      break;
+    default:
+    }
+  });
+
+  return newName;
+}
+export function breakUpSpooledFileName(pPath: string): Map<string,string> {
+  let counter = 0;
+  // get from config
+  const splfBrowserConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
+  let namePattern: string = splfBrowserConfig.get<string>('spooledFileNamePattern') || '';
+  if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
+  
+  // pattern values are separated by commas.  
+  const patterns = namePattern.split(/,\s*/);
+  const pathParts = pPath.split('/');
+  const nameParts = pathParts[2].split(/[~.]/);
+  
+  const namePartMap: Map<string, string> = new Map();
+  // map this user ID
+  // map the outq name
+  namePartMap.set('userOutqLib',pathParts[0]);
+  namePartMap.set('queue',pathParts[1]);
+  
+  for (let i = 0; i < patterns.length; i++) {
+    namePartMap.set(patterns[i],nameParts[i]);
+  }
+
+  return namePartMap;
+}
 export async function whereIsCustomFunc(funcName: string): Promise<FuncInfo> {
   // Look for the custom function somewhere
   let currentUser = '';
@@ -167,7 +266,7 @@ export async function checkSystemFunctionState(sysFunction: string, action: stri
 function getSource(func: string, library: string) {
   switch (func) {
   case `SPOOLED_FILE_DATA`:
-    if (library !== 'ILEDITOR') {return Buffer.from([``].join(`\n`), "utf8");}
+    if (library !== 'ILEDITOR') { return Buffer.from([``].join(`\n`), "utf8"); }
     return Buffer.from([
       `--  Generate SQL `
       , `--  Original Version:           	V7R5M0 220415 `

@@ -6,12 +6,12 @@ import { CommandResult } from "@halcyontech/vscode-ibmi-types";
 import { Code4i, whereIsCustomFunc} from "../tools";
 import { isProtectedFilter } from '../filesystem/qsys/SplfFs';
 import { IBMiContentSplf } from "../api/IBMiContentSplf";
-import { FuncInfo } from '../typings';
+import { FuncInfo, IBMISplfList, IBMiSpooledFile } from '../typings';
 
 const tmpFile = util.promisify(tmp.file);
 const writeFileAsync = util.promisify(fs.writeFile);
 
-export namespace UserSplfSearch {
+export namespace SplfSearch {
 
   export interface Result {
     path: string
@@ -25,7 +25,7 @@ export namespace UserSplfSearch {
     content: string
   }
 
-  export async function searchUserSpooledFiles( searchTerm: string, filter: string, splfName?: string, searchWords?: string): Promise<Result[]> {
+  export async function searchSpooledFiles( searchTerm: string, filter: IBMISplfList, splfName?: string, searchWords?: string): Promise<Result[]> {
     const connection = Code4i.getConnection();
     const config = Code4i.getConfig();
     const content = Code4i.getContent();
@@ -41,9 +41,15 @@ export namespace UserSplfSearch {
 
         const setccsid = connection.remoteFeatures.setccsid;
         // Start process to build on-server list of spooled files to search through
-        const objects = await IBMiContentSplf.getUserSpooledFileFilter(filter, { order: "date", ascending: false }, splfName, searchWords);
+        const treeFilter = {
+              name: filter.name,
+              library: filter.library,
+              type: filter.type,
+            } as IBMISplfList;
+        let objects = await IBMiContentSplf.getSpooledFileFilter( treeFilter, { order: "date", ascending: false }, splfName, searchWords);
+        objects = await IBMiContentSplf.updateSpooledFileDeviceType(objects);
         const workFileFormat = {
-          user: objects[0].user,
+          user: objects[0].jobUser,
           queue: objects[0].queue,
           qjob: objects[0].qualifiedJobName,
           name: objects[0].name,
@@ -53,19 +59,20 @@ export namespace UserSplfSearch {
         const query: string[] = [
           `create or replace table ${tempLib}.${tempName} as (
         with USER_SPOOLED_FILES (SFUSER,OUTQ,QJOB,SFILE,SFNUMBER) as (
-          select "user","queue","qjob","name","number" from JSON_Table(
+          select "jobUser","queue","qjob","name","number" from JSON_Table(
             '${largeString}' 
-            ,'lax $' COLUMNS( "user" char(10),"queue" char(10),"qjob" char(28),"name" char(10),"number" dec(6,0) 
+            ,'lax $' COLUMNS( "jobUser" char(10),"queue" char(10),"qjob" char(28),"name" char(10),"number" dec(6,0) 
               )) as SPLF ) select * from USER_SPOOLED_FILES ) with no data;`
         ];
-        const recordLength = `{"user":"ABCDEFGHIJ","queue":"ABCDEFGHIJ","qjob":"591022/ABCDEFGHIJ/ABCDEFGHIJ","number":"00001"}`.length;
+        const recordLength = `{"jobUser":"ABCDEFGHIJ","queue":"ABCDEFGHIJ","qjob":"591022/ABCDEFGHIJ/ABCDEFGHIJ","number":"00001"}`.length;
         const decimalSequence = objects.length;
         let insRows: string[] = [],
           sequence = 0;
         for (let i = 0; i < objects.length; i++) {
+          if (objects[i].deviceType !== '*SCS') {continue;} // We can only search through *SCS files
           sequence = decimalSequence ? ((i + 1) / 100) : i + 1;
           insRows.push(
-            `('${objects[i].user}', '${objects[i].queue}', '${objects[i].qualifiedJobName}', '${objects[i].name}', '${objects[i].number}')`
+            `('${objects[i].jobUser}', '${objects[i].queue}', '${objects[i].qualifiedJobName}', '${objects[i].name}', '${objects[i].number}')`
           );
         }
 
@@ -104,9 +111,10 @@ export namespace UserSplfSearch {
           command: ``
         } as CommandResult;
         if (!result.stderr) {
-          // path: "/${user}/QEZJOBLOG/QPJOBLOG~D000D2034A~[USERPROFILE]~849412~1.splf" <- path should be like this
-          // NOTE: Path issue with part names with underscores in them.  Need a different job separator token or can we use more sub parts to the path??
-          return parseGrepOutput(result.stdout || '', filter,
+          // path: "/currentUser/QEZJOBLOG/QPJOBLOG~D000D2034A~[USERPROFILE]~849412~1.splf" <- path should be like this
+          // NOTE: Path issue with part names with underscores in them, underscore is a valid character in a system name.  
+          //        Need a different job separator token or can we use more sub parts to the path??
+          return parseGrepOutput(result.stdout || '', filter.name,
             path => connection.sysNameInLocal(path)); 
         }
         else {
@@ -131,8 +139,8 @@ function sliceUp(arr: any[], size: number): any[] {
 function sanitizeSearchTerm(searchTerm: string): string {
   return searchTerm.replace(/\\/g, `\\\\`).replace(/"/g, `\\\\"`);
 }
-function parseGrepOutput(output: string, filter?: string, pathTransformer?: (path: string) => string): UserSplfSearch.Result[] {
-  const results: UserSplfSearch.Result[] = [];
+function parseGrepOutput(output: string, filter?: string, pathTransformer?: (path: string) => string): SplfSearch.Result[] {
+  const results: SplfSearch.Result[] = [];
   const readonly = isProtectedFilter(filter);
   for (const line of output.split('\n')) {
     if (!line.startsWith(`Binary`)) {

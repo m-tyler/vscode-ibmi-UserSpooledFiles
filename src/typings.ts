@@ -1,26 +1,28 @@
 import { Range } from "vscode";
 
 export interface IBMiSpooledFile {
-  user: string
   name: string
   number: string
-  status: string
-  creationTimestamp: string
-  userData: string
-  size: number
-  totalPages: number
-  pageLength: string
+  status?: string
+  creationTimestamp?: string
+  userData?: string
+  size?: number
+  totalPages?: number
+  pageLength?: string
   qualifiedJobName :string
-  jobName: string
-  jobUser: string
-  jobNumber: string
-  formType: string
+  jobName?: string
+  jobUser?: string
+  jobNumber?: string
+  formType?: string
   queueLibrary: string
   queue: string
+  deviceType?: string
 }  
-export interface IBMiSplfUser {
-  user: string
+export interface IBMISplfList {
+  name: string
+  library?: string
   text?: string
+  type: string
 }  
 export interface IBMiSplfCounts {
   numberOf: string

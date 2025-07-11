@@ -4,12 +4,13 @@ import fs from "fs";
 import os from "os";
 import path from "path";
 import util from "util";
+ import sanitize from 'sanitize-filename';
 import vscode, { l10n, TextDocumentShowOptions } from 'vscode';
 import { SplfFS } from "../src/filesystem/qsys/SplfFs";
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
 import { Code4i } from "./tools";
-import { IBMiSpooledFile, SplfOpenOptions } from './typings';
-import SPLFBrowser, { SpooledFileUser, UserSpooledFiles } from './views/userSplfsView';
+import { IBMISplfList, IBMiSpooledFile, SplfOpenOptions } from './typings';
+import SPLFBrowser, { SpooledFileFilter, SpooledFiles } from './views/SplfsView';
 
 const writeFileAsync = util.promisify(fs.writeFile);
 
@@ -26,7 +27,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
     vscode.workspace.registerFileSystemProvider(`spooledfile`, new SplfFS(context), {
       isCaseSensitive: false
     }),
-    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.sortSPLFSFilesByName`, (node: SpooledFileUser | UserSpooledFiles) => {
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.sortSPLFSFilesByName`, (node: SpooledFileFilter | SpooledFiles) => {
       node.sortBy({ order: "name" });
       if (node.contextValue === `spooledfile`) {
         splfBrowserObj.refresh(node.parent);
@@ -51,63 +52,101 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       splfBrowserViewer.reveal(item, options);
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.addUserSpooledFileFilter`, async () => {
-      const config = getConfig();
-      const connection = getConnection();
+      const config = getConnection().getConfig();
 
-      let newUserSplfs;
-
-      let usersSpooledFile = config[`usersSpooledFile`] || [];;
-      if (config.usersSpooledFile) {
-        usersSpooledFile = config.usersSpooledFile;
+      let SpooledFileConfig = config.SpooledFileConfig;
+      if (config.SpooledFileConfig) {
+        SpooledFileConfig = config.SpooledFileConfig;
       }
 
-      newUserSplfs = await vscode.window.showInputBox({
-        prompt: l10n.t(`User to show Spooled Files`),
-        value: connection.currentUser
+      const userInput = await vscode.window.showInputBox({
+        title: l10n.t(`Add new spooled file filter for User`),
+        prompt: l10n.t(`If no library given then assumed *LIBL.`),
+        value: getConnection().currentUser,
+        placeHolder: `Library/USERNAME`
       });
 
       try {
-        if (newUserSplfs) {
-          newUserSplfs = newUserSplfs.trim().toUpperCase().toUpperCase();
+        if (userInput) {
+          const newUserSplfs = userInput.trim().toUpperCase().toUpperCase().split(`/`);
+          const i = newUserSplfs.length;
+          // Split value
+          const newEntry: IBMISplfList = { name: newUserSplfs[i - 1], library: i > 1 ? newUserSplfs[i - 1] : '*LIBL', type: 'USER' };
 
-          if (!usersSpooledFile.includes(newUserSplfs)) {
-            usersSpooledFile.push(newUserSplfs);
-            config.usersSpooledFile = usersSpooledFile;
+          if (!SpooledFileConfig.includes(newEntry)) {
+            SpooledFileConfig.push(newEntry);
+            config.SpooledFileConfig = SpooledFileConfig;
             Code4i.getInstance()!.setConfig(config);
-            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.sortUserSpooledFileFilter`);
+            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.sortSpooledFileFilter`);
           }
         }
       } catch (e) {
         // console.log(e);
       }
     }),
-    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.deleteUserSpooledFileFilter`, async (node) => {
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.addOUTQSpooledFileFilter`, async () => {
+      const connection = getConnection();
+      const config = connection.getConfig();
+      
+      let SpooledFileConfig = config.SpooledFileConfig;
+      if (config.SpooledFileConfig) {
+        SpooledFileConfig = config.SpooledFileConfig;
+      }
+      
+      const userInput = await vscode.window.showInputBox({
+        title: l10n.t(`OUTQ to show Spooled Files`),
+        prompt: l10n.t(`If no library given then assumed *LIBL.`),
+        value: ``,
+        placeHolder: `Library/OUTQ`
+      });
+      
+      try {
+        if (userInput) {
+          let newOUTQ = userInput.trim().toUpperCase().toUpperCase().split(`/`);
+          const i = newOUTQ.length;
+          // Split value
+          const newEntry: IBMISplfList = { name: newOUTQ[i - 1], library: i > 1 ? newOUTQ[i - 1] : '*LIBL', type: 'OUTQ' };
+
+          if (!SpooledFileConfig.includes(newEntry)) {
+            SpooledFileConfig.push(newEntry);
+            config.SpooledFileConfig = SpooledFileConfig;
+            Code4i.getInstance()!.setConfig(config);
+            vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.sortSpooledFileFilter`);
+          }
+        }
+      } catch (e) {
+        // console.log(e);
+      }
+    }),
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.deleteSpooledFileFilter`, async (node) => {
       const config = getConfig();
 
-      let removeUser: string | undefined;
-      let usersSpooledFile = config.usersSpooledFile;
+      let removeItem: string | undefined;
+      let SpooledFileConfig = config.SpooledFileConfig;
 
       if (node) {
-        removeUser = node.path;
+        removeItem = node.path;
       } else {
-        removeUser = await vscode.window.showQuickPick(usersSpooledFile, {
+        removeItem = await vscode.window.showQuickPick(SpooledFileConfig, {
           placeHolder: l10n.t('Select filter name to remove'),
         });
       }
 
       try {
-        if (removeUser) {
-          removeUser = removeUser.trim();
-          let message = l10n.t(`Are you sure you want to delete the user spooled file filter,'{0}'?`, removeUser);
+        if (removeItem) {
+          removeItem = removeItem.trim();
+          let message = l10n.t(`Are you sure you want to delete the spooled file filter,'{0}'?`, removeItem);
           let detail = ``;
           vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`))
             .then(async result => {
+              // let isPresent = false;
               if (result === l10n.t(`Yes`)) {
-                const inx = usersSpooledFile.indexOf(removeUser);
-
-                if (inx >= 0) {
-                  usersSpooledFile.splice(inx, 1);
-                  config.usersSpooledFile = usersSpooledFile;
+                if (SpooledFileConfig) {
+                }
+                const index = SpooledFileConfig.findIndex((f: IBMISplfList) => f.name === removeItem);
+                if (index > -1) {
+                  SpooledFileConfig.splice(index, 1);
+                  config.SpooledFileConfig = SpooledFileConfig;
                   Code4i.getInstance()!.setConfig(config);
                   vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`);
                 }
@@ -118,26 +157,27 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         // console.log(e);
       }
     }),
-    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.sortUserSpooledFileFilter`, async (node) => {
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.sortSpooledFileFilter`, async (node) => {
       /** @type {ConnectionConfiguration.Parameters} */
       const config = getConfig();
 
-      let usersSpooledFile = config.usersSpooledFile;
-
+      config.SpooledFileConfig.sort(
+        (filter1: IBMISplfList, filter2: IBMISplfList) => filter1.name.toLowerCase().localeCompare(filter2.name.toLowerCase())
+      );
       try {
 
-        usersSpooledFile.sort(function (a: string, b: string): number {
-          let x = a.toLowerCase();
-          let y = b.toLowerCase();
-          if (x < y) { return -1; }
-          if (x > y) { return 1; }
-          return 0;
-        });
-        config.usersSpooledFile = usersSpooledFile;
+        // SpooledFileConfig.sort(function (a: string, b: string): number {
+        //   let x = a.toLowerCase();
+        //   let y = b.toLowerCase();
+        //   if (x < y) { return -1; }
+        //   if (x > y) { return 1; }
+        //   return 0;
+        // });
+        // config.SpooledFileConfig = SpooledFileConfig;
         Code4i.getInstance()!.setConfig(config);
         vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
       } catch (e) {
-        // console.log(e);
+        console.log(e);
       }
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.deleteSpooledFile`, async (node: any, nodes?: any[]) => {
@@ -165,14 +205,14 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
               command: commands
               , environment: `ile`
             });
-            
+
             vscode.window.showInformationMessage(l10n.t(`Deleted {0}.`, pathString));
-            
+
             vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, nodes[0].parent);
             splfBrowserViewer.reveal(nodes[0].parent, { focus: true, select: true });
           } catch (e: unknown) {
             if (e instanceof Error) {
-              vscode.window.showErrorMessage(l10n.t(`Error deleting user spooled file! {0}.`, e));
+              vscode.window.showErrorMessage(l10n.t(`Error deleting spooled file! {0}.`, e));
             }
           }
 
@@ -205,7 +245,12 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           let objects: IBMiSpooledFile[] = [];
 
           if (result === `Yes`) {
-            objects = await IBMiContentSplf.getUserSpooledFileFilter(node.user, node.sort, node.name);
+            const treeFilter = {
+              name: node.parent.name,
+              library: node.parent.library,
+              type: node.parent.type,
+            } as IBMISplfList;
+            objects = await IBMiContentSplf.getSpooledFileFilter(treeFilter, node.sort, node.name);
           }
           try {
             let commands = objects.map((o: any) => (
@@ -234,7 +279,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           }
           catch (e: unknown) {
             if (e instanceof Error) {
-              vscode.window.showErrorMessage(l10n.t(`Error deleting user spooled file! {0}.`, e));
+              vscode.window.showErrorMessage(l10n.t(`Error deleting named spooled file! {0}.`, e));
             }
           }
           if (deleteCount > 0) {
@@ -278,7 +323,12 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           let objects: IBMiSpooledFile[] = [];
 
           if (result === `Yes`) {
-            objects = await IBMiContentSplf.getUserSpooledFileFilter(node.user, node.sort, undefined, node.parent.filter);
+            const treeFilter = {
+              name: node.parent.name,
+              library: node.parent.library,
+              type: node.parent.type,
+            } as IBMISplfList;
+            objects = await IBMiContentSplf.getSpooledFileFilter(treeFilter, node.sort, undefined, node.parent.filter);
           }
           try {
             let commands = objects.map((o: any) => (
@@ -306,7 +356,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
 
           } catch (e: unknown) {
             if (e instanceof Error) {
-              vscode.window.showErrorMessage(l10n.t(`Error deleting user spooled file! {0}.`, e));
+              vscode.window.showErrorMessage(l10n.t(`Error deleting Filtered spooled files! {0}.`, e));
             }
           }
           if (deleteCount > 0) {
@@ -329,14 +379,18 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         //Running from command.
       }
     }),
-    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.deleteUserSpooledFiles`, async (node, nodes?: any[]) => {
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.deleteAllSpooledFiles`, async (node, nodes?: any[]) => {
       if (nodes && nodes.length > 0) {
-        vscode.window.showWarningMessage(l10n.t(`'Delete all user spooled files' is not valid for multiple selections. `));
+        vscode.window.showWarningMessage(l10n.t(`'Delete all spooled files' is not valid for multiple selections. `));
         return;
       }
       if (node) {
+        if (node.type === 'OUTQ') {
+          vscode.window.showWarningMessage(l10n.t(`'Delete all spooled files' is not valid for OUTQs.`));
+          return;
+        }
         //Running from right click
-        let message = l10n.t(`Are you sure you want to delete ALL spooled files for user {0}?`, node.user);
+        let message = l10n.t(`Are you sure you want to delete _ALL_ spooled files for {0}?`, node.name);
         let detail = ``;
         let result = await vscode.window.showWarningMessage(message, { modal: true, detail }, l10n.t(`Yes`), l10n.t(`No`));
 
@@ -359,7 +413,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
             vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
           } catch (e: unknown) {
             if (e instanceof Error) {
-              vscode.window.showErrorMessage(l10n.t(`Error deleting user spooled file! {0}.`, e));
+              vscode.window.showErrorMessage(l10n.t(`Error deleting ALL spooled file! {0}.`, e));
             }
           }
 
@@ -372,7 +426,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       }
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.moveSpooledFile`, async (node, nodes?: any[]) => {
-            // put single selection into array and just use array for further work
+      // put single selection into array and just use array for further work
       if (node && nodes && nodes.length === 0) {
         nodes.push(node);
       }
@@ -402,7 +456,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
 
           } catch (e: unknown) {
             if (e instanceof Error) {
-              vscode.window.showErrorMessage(l10n.t(`Error moving user spooled file! {0}.`, e));
+              vscode.window.showErrorMessage(l10n.t(`Error moving spooled file! {0}.`, e));
             }
           }
         }
@@ -413,19 +467,17 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       }
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.filterSpooledFiles`, async (node) => {
-      const content = getContent();
-
-      let searchUser: any;
+      let searchName: any;
       let searchTerm: any;
       if (node) {
-        searchUser = node.user;
+        searchName = node.name;
       }
 
-      if (!searchUser) { return; }
+      if (!searchName) { return; }
 
       searchTerm = await vscode.window.showInputBox({
         // prompt: `Filter ${searchUser}'s spooled files. Delete value to clear filter.`,
-        prompt: l10n.t(`Filter {0}'s spooled files. Delete value to clear filter.`, searchUser),
+        prompt: l10n.t(`Filter {0}'s spooled files. Delete value to clear filter.`, searchName),
         value: `${node.contextValue === `spooledfile` ? node.parent.filter : node.filter}`
       });
 
@@ -437,10 +489,10 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           }, async progress => {
             progress.report({
               // message: `Filtering spooled files for ${searchUser}, using these words, ${searchTerm} spooled files.`
-              message: l10n.t(`Filtering spooled files for {0}, using these words, {1} spooled files.`, searchUser, searchTerm),
+              message: l10n.t(`Filtering spooled files for {0}, using these words, {1} spooled files.`, searchName, searchTerm),
             });
             searchTerm = searchTerm.toLocaleUpperCase();
-            const splfnum = await IBMiContentSplf.getUserSpooledFileCount(searchUser);
+            const splfnum = await IBMiContentSplf.getFilterSpooledFileCount(searchName, node.library, node.type);
             if (Number(splfnum.numberOf) > 0) {
               if (node.contextValue === `spooledfile`) {
                 node.parent.setFilter(searchTerm);
@@ -467,7 +519,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       }
 
     }),
-    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing`, async (node: UserSpooledFiles, nodes?: UserSpooledFiles[], options?: SplfOpenOptions) => {
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing`, async (node: SpooledFiles, nodes?: SpooledFiles[], options?: SplfOpenOptions) => {
       nodes = nodes || [];
       if (node && nodes && nodes.length === 0) {
         nodes.push(node);
@@ -483,7 +535,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       };
       return vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileDefault", node, nodes, options);
     }),
-    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFileDefault`, async (node: UserSpooledFiles, nodes?: UserSpooledFiles[], options?: SplfOpenOptions) => {
+    vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFileDefault`, async (node: SpooledFiles, nodes?: SpooledFiles[], options?: SplfOpenOptions) => {
       // put single selection into array and just use array for further work
       if (node && nodes && nodes.length === 0) {
         nodes.push(node);
@@ -513,8 +565,13 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       let splfContent: string = ``;
       let localFileUri: vscode.Uri;
       let localFileUris: vscode.Uri[] = [];
-      for (let node of nodes) {
-        // await dosomething(node);
+      const newNodes = await IBMiContentSplf.updateNodeSpooledFileDeviceType(nodes);
+      for (let node of newNodes) {
+        if (node.deviceType === '*AFPDS') {options.fileExtension = 'pdf';}
+        if (node.deviceType === '*USERASCII') {
+          vscode.window.showWarningMessage(l10n.t(`Spooled File {0} in {1} is not eligible for operation.`,node.name, node.queue));
+          continue;
+        }
         await vscode.window.withProgress({
           location: vscode.ProgressLocation.Window,
           // title: l10n.t(`Downloading spooled file content`),
@@ -522,11 +579,10 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           progress.report({
             message: l10n.t(`Downloading spooled file contents`),
           });
-          splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.path, node.name, node.qualifiedJobName
-            , node.number, options);
+          splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path||'', options);
         });
         const tmpExt = path.extname(node.path);
-        const fileName = path.basename(node.path, tmpExt);
+        const fileName = sanitize( path.basename(node.path, tmpExt)); //TODO: add name sanitation
         let localFilePathBase: string = '';
         if (!options.saveToPath) {
           if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length !== 1) {
@@ -582,7 +638,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       // }
       return localFileUris;
     }),
-    vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfWithLineSpacing", async (node: UserSpooledFiles, nodes?: UserSpooledFiles[], options?: SplfOpenOptions) => {
+    vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfWithLineSpacing", async (node: SpooledFiles, nodes?: SpooledFiles[], options?: SplfOpenOptions) => {
       nodes = nodes || [];
       if (node && nodes && nodes.length === 0) {
         nodes.push(node);
@@ -596,7 +652,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         saveToPath: options?.saveToPath || os.tmpdir(),
         tempPath: true
       };
-      nodes = await updateSpooledFilePageSize(nodes);
+      nodes = await IBMiContentSplf.updateSpooledFilePageSize(nodes);
       vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing", node, nodes, options)
         .then(async (localFileUris) => {
           try {
@@ -611,7 +667,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         })
         ;
     }),
-    vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing", async (node: UserSpooledFiles, nodes?: UserSpooledFiles[], options?: SplfOpenOptions) => {
+    vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing", async (node: SpooledFiles, nodes?: SpooledFiles[], options?: SplfOpenOptions) => {
       nodes = nodes || [];
       if (node && nodes && nodes.length === 0) {
         nodes.push(node);
@@ -644,7 +700,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
         })
         ;
     }),
-    vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfasPDF", async (node: UserSpooledFiles, nodes?: UserSpooledFiles[]) => {
+    vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfasPDF", async (node: SpooledFiles, nodes?: SpooledFiles[]) => {
       nodes = nodes || [];
       if (node && nodes && nodes.length === 0) {
         nodes.push(node);
@@ -707,8 +763,43 @@ function getContent() {
   }
 }
 async function run_on_connection(): Promise<void> {
-  // Promise.all([vscode.commands.executeCommand("code-for-ibmi.refreshSPLFBrowser")
-  // ]);
+  try {
+    // look for old format style config and reformat into IBMISplfList object type
+    const config = getConfig();
+    let oldFilterConfig: string[] = config.usersSpooledFile;
+    if (!oldFilterConfig) { return; }
+    if (oldFilterConfig) {
+      let SpooledFileConfig: IBMISplfList[] = [];
+      if (config.SpooledFileConfig) {
+        SpooledFileConfig = config.SpooledFileConfig;
+      }
+      oldFilterConfig.forEach(filter => {
+        const item = filter.trim().toUpperCase().toUpperCase().split(`/`);
+        const i = item.length;
+        const newEntry: IBMISplfList = { name: item[i - 1], library: i > 1 ? item[i - 1] : '*LIBL', type: 'USER' };
+        let isPresent = false;
+        if (SpooledFileConfig) {
+          isPresent = SpooledFileConfig.some(obj => obj.library === newEntry.library && obj.name === newEntry.name && obj.type === newEntry.type);
+        }
+        if (!isPresent) {
+          SpooledFileConfig.push(newEntry);
+          config.SpooledFileConfig = SpooledFileConfig;
+          Code4i.getInstance()!.setConfig(config);
+        }
+        // Drop old config
+        const inx = oldFilterConfig.indexOf(filter);
+        if (inx >= 0) {
+          oldFilterConfig.splice(inx, 1);
+          config.usersSpooledFile = oldFilterConfig;
+          Code4i.getInstance()!.setConfig(config);
+        }
+      });
+    }
+    vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`);
+  } catch (e: any) {
+    console.log(e);
+    vscode.window.showErrorMessage(e.message);
+  }
 }
 function generateSequencedFileName(uri: vscode.Uri): string {
   const dir = path.dirname(uri.fsPath);
@@ -723,14 +814,4 @@ function generateSequencedFileName(uri: vscode.Uri): string {
     sequence++;
   }
   return path.join(dir, sequenceName);
-}
-async function updateSpooledFilePageSize(nodes: UserSpooledFiles[]): Promise<UserSpooledFiles[]> {
-  const modifiedNodes: UserSpooledFiles[] = [];
-  for (const node of nodes) {
-    node.pageLength = await IBMiContentSplf.getSpooledPageLength(node.user, node.name
-      , node.qualifiedJobName, node.number
-      , node.queue, node.queueLibrary);
-    modifiedNodes.push(node);
-  }
-  return modifiedNodes;
 }
