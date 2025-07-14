@@ -3,7 +3,7 @@ import { SortOptions } from '@halcyontech/vscode-ibmi-types/api/IBMiContent';
 import vscode, { l10n, TreeDataProvider } from 'vscode';
 import { IBMiContentSplf } from "../api/IBMiContentSplf";
 import { getSpooledFileUri } from '../filesystem/qsys/SplfFs';
-import { Code4i } from '../tools';
+import { Code4i, getMyConfig } from '../tools';
 import { IBMISplfList, IBMiSpooledFile } from '../typings';
 
 
@@ -17,17 +17,28 @@ const objectIcons: Record<string, string> = {
 };
 
 export default class SPLFBrowser implements TreeDataProvider<any> {
-  private emitter: vscode.EventEmitter<any>;
-  public onDidChangeTreeData: vscode.Event<any>;
+  private _onDidChangeTreeData: vscode.EventEmitter<vscode.TreeItem | undefined | null | void>;
+  public onDidChangeTreeData: vscode.Event<vscode.TreeItem | undefined | null | void>;
+  private data: IBMISplfList[] = []; // Your data storage
 
-  constructor(private context: vscode.ExtensionContext) {
-    this.emitter = new vscode.EventEmitter();
-    this.onDidChangeTreeData = this.emitter.event;
+  constructor() {
+    this._onDidChangeTreeData = new vscode.EventEmitter();
+    this.onDidChangeTreeData = this._onDidChangeTreeData.event;
   }
 
   refresh(target?: any) {
-    this.emitter.fire(target);
-    // vscode.window.showInformationMessage(vscode.l10n.t(`Spooled File Browser refreshed.`));
+    this._onDidChangeTreeData.fire(target);
+  }
+  // Method to set data when your extension becomes connected
+  public populateData(newData: IBMISplfList[]): void {
+    this.data = newData;
+    this._onDidChangeTreeData.fire(); // Notify VS Code to refresh
+  }
+
+  // Method to clear the tree view
+  public clearTree(): void {
+    this.data = []; // Clear the data
+    this._onDidChangeTreeData.fire(); // Notify VS Code to refresh
   }
 
   /**
@@ -46,7 +57,8 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
     const items = [];
     const connection = getConnection();
     if (connection) {
-      const content = getContent();
+      // const myConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser.spooledFileFilters');
+
       const config = getConfig();
 
       if (element) {
@@ -69,7 +81,12 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
           break;
         }
 
-      } else if (config.SpooledFileConfig) { // no context exists in tree yet, get from settings if present
+        // } else if (this.data) { // no context exists in tree yet, get from settings if present
+        // items.push( ...this.data.map(
+          //     (theFilter: IBMISplfList) => new SpooledFileFilter(`splflist`, element, theFilter, connection.currentUser)
+          //   ));
+      // }
+        } else if (config.SpooledFileConfig) { // no context exists in tree yet, get from settings if present
         items.push(...config.SpooledFileConfig.map(
           (theFilter: IBMISplfList) => new SpooledFileFilter(`splflist`, element, theFilter, connection.currentUser)
         ));
@@ -110,7 +127,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
    * @param {vscode.CancellationToken} token
    * @returns {ProviderResult<vscode.TreeItem>};
    */
-  async resolveTreeItem(item: SpooledFileFilter|SpooledFiles, element: any, token: vscode.CancellationToken): Promise<vscode.TreeItem> {
+  async resolveTreeItem(item: SpooledFileFilter | SpooledFiles, element: any, token: vscode.CancellationToken): Promise<vscode.TreeItem> {
     if (item instanceof SpooledFileFilter) {
       // TypeScript knows 'param' is of type MyClass here
       // console.log(`in resolveTreeItem, item is an instance of SpooledFileFilter`);
@@ -118,7 +135,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
       const splfFilterInfo = await IBMiContentSplf.getFilterDescription([item.name], item.library, item.type);
       item.numberOf = splfNum.numberOf;
       item.itemText = splfFilterInfo[0].text || ``;
-      if (splfFilterInfo[0].library && (item.library === '' || item.library === '*LIBL')) {item.library = splfFilterInfo[0].library;}
+      if (splfFilterInfo[0].library && (item.library === '' || item.library === '*LIBL')) { item.library = splfFilterInfo[0].library; }
 
       item.tooltip = new vscode.MarkdownString(`<table>`
         .concat(`<thead>${element.library}/${element.name}</thead><hr>`)
@@ -130,25 +147,25 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
       item.tooltip.supportHtml = true;
     } else if (item instanceof SpooledFiles) {
       // console.log(`in resolveTreeItem, 'item' is an instance of SpooledFiles`);
-      const info = await IBMiContentSplf.getSpooledFileDeviceType( [item.queue], [item.queueLibrary], [item.name], [item.jobUser]
-                                                                    , item.qualifiedJobName, item.number );
-      item.pageLength = await IBMiContentSplf.getSpooledPageLength( item.queue, item.queueLibrary, item.name, item.qualifiedJobName, item.number );                                                                    
-      item.deviceType = info[0].deviceType||'*SCS';
+      const info = await IBMiContentSplf.getSpooledFileDeviceType([item.queue], [item.queueLibrary], [item.name], [item.jobUser]
+        , item.qualifiedJobName, item.number);
+      item.pageLength = await IBMiContentSplf.getSpooledPageLength(item.queue, item.queueLibrary, item.name, item.qualifiedJobName, item.number);
+      item.deviceType = info[0].deviceType || '*SCS';
       item.tooltip = new vscode.MarkdownString(`<table>`
-      .concat(`<thead>${item.path.split(`/`)[2]}</thead><hr>`)
-      .concat(item.qualifiedJobName ? `<tr><td style="text-align: right;">${l10n.t(`Job:`)}</td><td>&nbsp;${item.qualifiedJobName}</td></tr>` : ``)
-      .concat(item.number ? `<tr><td>${l10n.t(`File Number:`)}</td><td>&nbsp;${item.number}</td></tr>` : ``)
-      .concat(item.userData ? `<tr><td>${l10n.t(`UserData:`)}</td><td>&nbsp;${item.userData}</td></tr>` : ``)
-      .concat(item.creationTimestamp ? `<tr><td>${l10n.t(`Created:`)}</td><td>&nbsp;${item.creationTimestamp}</td></tr>` : ``)
-      .concat(item.size ? `<tr><td>${l10n.t(`Size in bytes:`)}</td><td>&nbsp;${item.size}</td></tr>` : ``)
-      .concat(item.pageLength ? `<tr><td>${l10n.t(`Page Length:`)}</td><td>&nbsp;${item.pageLength}</td></tr>` : ``)
-      .concat(item.formType ? `<tr><td>${l10n.t(`Form Type:`)}</td><td>&nbsp;${item.formType}</td></tr>` : ``)
-      .concat(item.queue ? `<tr><td>${l10n.t(`Output Queue:`)}</td><td>&nbsp;${item.queueLibrary, item.queue}</td></tr>` : ``)
-      .concat(item.deviceType ? `<tr><td>${l10n.t(`Device Type:`)}</td><td>&nbsp;${item.deviceType}</td></tr>` : ``)
-      .concat(item.parent.filter ? `<tr><td>${l10n.t(`Filter:`)}</td><td>&nbsp;${item.parent.filter}</td></tr>` : ``)
-      .concat(`</table>`)
-    );
-    item.tooltip.supportHtml = true;
+        .concat(`<thead>${item.path.split(`/`)[2]}</thead><hr>`)
+        .concat(item.qualifiedJobName ? `<tr><td style="text-align: right;">${l10n.t(`Job:`)}</td><td>&nbsp;${item.qualifiedJobName}</td></tr>` : ``)
+        .concat(item.number ? `<tr><td>${l10n.t(`File Number:`)}</td><td>&nbsp;${item.number}</td></tr>` : ``)
+        .concat(item.userData ? `<tr><td>${l10n.t(`UserData:`)}</td><td>&nbsp;${item.userData}</td></tr>` : ``)
+        .concat(item.creationTimestamp ? `<tr><td>${l10n.t(`Created:`)}</td><td>&nbsp;${item.creationTimestamp}</td></tr>` : ``)
+        .concat(item.size ? `<tr><td>${l10n.t(`Size in bytes:`)}</td><td>&nbsp;${item.size}</td></tr>` : ``)
+        .concat(item.pageLength ? `<tr><td>${l10n.t(`Page Length:`)}</td><td>&nbsp;${item.pageLength}</td></tr>` : ``)
+        .concat(item.formType ? `<tr><td>${l10n.t(`Form Type:`)}</td><td>&nbsp;${item.formType}</td></tr>` : ``)
+        .concat(item.queue ? `<tr><td>${l10n.t(`Output Queue:`)}</td><td>&nbsp;${item.queueLibrary, item.queue}</td></tr>` : ``)
+        .concat(item.deviceType ? `<tr><td>${l10n.t(`Device Type:`)}</td><td>&nbsp;${item.deviceType}</td></tr>` : ``)
+        .concat(item.parent.filter ? `<tr><td>${l10n.t(`Filter:`)}</td><td>&nbsp;${item.parent.filter}</td></tr>` : ``)
+        .concat(`</table>`)
+      );
+      item.tooltip.supportHtml = true;
     }
     return item;
   }
@@ -246,17 +263,17 @@ export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
     // Layout of IBMiSpooledFile
     this.name = object.name;
     this.number = object.number;
-    this.status = object.status||'';
-    this.creationTimestamp = object.creationTimestamp||'';
-    this.userData = object.userData||'';
-    this.size = object.size||0;
-    this.totalPages = object.totalPages||0;
-    this.pageLength = object.pageLength||'';
+    this.status = object.status || '';
+    this.creationTimestamp = object.creationTimestamp || '';
+    this.userData = object.userData || '';
+    this.size = object.size || 0;
+    this.totalPages = object.totalPages || 0;
+    this.pageLength = object.pageLength || '';
     this.qualifiedJobName = object.qualifiedJobName;
-    this.jobName = object.jobName||'';
-    this.jobUser = object.jobUser||'';
-    this.jobNumber = object.jobNumber||'';
-    this.formType = object.formType||'';
+    this.jobName = object.jobName || '';
+    this.jobUser = object.jobUser || '';
+    this.jobNumber = object.jobNumber || '';
+    this.formType = object.formType || '';
     this.queueLibrary = object.queueLibrary;
     this.queue = object.queue;
 
@@ -264,10 +281,10 @@ export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
     this.iconPath = new vscode.ThemeIcon(icon);
     this.protected = parent.protected;
     this.contextValue = `spooledfile${this.protected ? `_readonly` : ``}`;
-    this.resourceUri = getSpooledFileUri(parent.type, object, parent.protected ? { readonly: true } : undefined)||'';
+    this.resourceUri = getSpooledFileUri(parent.type, object, parent.protected ? { readonly: true } : undefined) || '';
     this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
     this.deviceType = ``;
-    
+
     this.command = {
       command: `vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing`,
       title: `Open Spooled File`,

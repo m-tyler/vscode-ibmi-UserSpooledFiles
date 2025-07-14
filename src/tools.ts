@@ -176,11 +176,17 @@ export function buildSpooledFileNamefromPattern(filterType: string, splf: IBMiSp
 
   return newName;
 }
+export function getMyConfig(configName: string) { 
+  const myConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
+  let mySpooledConfig: string = myConfig.get<string>(`${configName}`) || '';
+
+  return mySpooledConfig;
+}
 export function breakUpSpooledFileName(pPath: string): Map<string,string> {
   let counter = 0;
   // get from config
-  const splfBrowserConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
-  let namePattern: string = splfBrowserConfig.get<string>('spooledFileNamePattern') || '';
+  const myConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
+  let namePattern: string = myConfig.get<string>('spooledFileNamePattern') || '';
   if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
   
   // pattern values are separated by commas.  
