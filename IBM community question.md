@@ -1,5 +1,0 @@
-I am writing a project where the user can search through spooled files in a list (USER PROFILE or OUTQ).  However, the SQL table function SPOOLED_FILE_DATA() cannot search through *AFPDS or *USERASCII.  The function crashes.  So to get around this, I am attempting to filter out those spooled files that are not *SCS device type.   I am using view QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC to help with this. 
-
-My issue is when running a query over QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC, it takes easily twice or more as long to return information for spooled files in an OUTQ that has many spooled files.  In one test case I have been using, it take about 15 seconds to return from an OUTQ that has 100000+ entries versus about 3-4 second from an OUTQ that has a few thousand. 
-
-We don't have that many spooled files if type *AFPDS or *USERASCII but its far too much time spent in QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC trying figure this out. 
