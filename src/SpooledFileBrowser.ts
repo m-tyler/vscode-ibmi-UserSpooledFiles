@@ -812,7 +812,6 @@ function run_on_connection() {
       vscode.window.showErrorMessage(e.message);
     }
   }
-  // splfBrowserObj.populateData(config[`SpooledFileConfig`]);
 }
 function run_on_disconnection() {
   vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`);

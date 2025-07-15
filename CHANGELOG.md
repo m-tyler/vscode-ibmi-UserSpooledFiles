@@ -1,5 +1,8 @@
 # Change Log
 
+## Version 1.1.1 
+  *  Bug when switching servers with different configuration of spooled file filters.
+  
 ## Version 1.1.0 
   *  Added ability to view a specific OUTQ.  Older filter names should be migrated automatically but if not users will just need to recreate their list. 
   *  Added setting for naming the spooled file being opened.  There is some fixed name parts, USER/OUTQ when viewing through a USER type filter or OUTQLIB/OUTQ when viewing through a OUTQ type filter.
