@@ -39,24 +39,21 @@ export namespace IBMiContentSplf {
     }
 
     const objQuery = `select SPE.SPOOLED_FILE_NAME, SPE.SPOOLED_FILE_NUMBER, SPE.STATUS, SPE.CREATION_TIMESTAMP
-    , SPE.USER_DATA, SPE.SIZE, SPE.TOTAL_PAGES, SPE.QUALIFIED_JOB_NAME, SPE.JOB_NAME, SPE.JOB_USER, SPE.JOB_NUMBER, SPE.FORM_TYPE
-    , SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE
-    from table (QSYS2.SPOOLED_FILE_INFO(${queryParm}) ) SPE 
-    where SPE.FILE_AVAILABLE = '*FILEEND' ${splfName ? ` and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""}
-    order by ${sort.order === 'name' ? 'SPE.SPOOLED_FILE_NAME' : 'SPE.CREATION_TIMESTAMP'} 
-    ${!sort.ascending ? 'desc' : 'asc'} 
-    , SPE.SPOOLED_FILE_NUMBER ${!sort.ascending ? 'desc' : 'asc'} 
-    limit ${resultLimit}`.replace(/\n\s*/g, ' ');
+      , SPE.USER_DATA, SPE.SIZE, SPE.TOTAL_PAGES, SPE.QUALIFIED_JOB_NAME, SPE.JOB_NAME, SPE.JOB_USER, SPE.JOB_NUMBER, SPE.FORM_TYPE
+      , SPE.OUTPUT_QUEUE_LIBRARY, SPE.OUTPUT_QUEUE
+      from table (QSYS2.SPOOLED_FILE_INFO(${queryParm}) ) SPE 
+      where SPE.FILE_AVAILABLE = '*FILEEND' ${splfName ? ` and SPE.SPOOLED_FILE_NAME = ucase('${splfName}')` : ""}
+      order by ${sort.order === 'name' ? 'SPE.SPOOLED_FILE_NAME' : 'SPE.CREATION_TIMESTAMP'} 
+      ${!sort.ascending ? 'desc' : 'asc'} 
+      , SPE.SPOOLED_FILE_NUMBER ${!sort.ascending ? 'desc' : 'asc'} 
+      limit ${resultLimit}`.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
 
     if (results.length === 0) {
       return [];
     }
-    // results = results.sort((a, b) => String(a.MBSPOOLED_FILE_NAMENAME).localeCompare(String(b.SPOOLED_FILE_NAME)));
 
     let searchWords_ = searchWords?.split(' ') || [];
-
-    // return results
     let returnSplfList = results
       .map(object => ({
         name: connection.sysNameInLocal(String(object.SPOOLED_FILE_NAME)),

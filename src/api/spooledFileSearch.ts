@@ -112,7 +112,7 @@ export namespace SplfSearch {
         } as CommandResult;
         if (!result.stderr) {
           // path: "/currentUser/QEZJOBLOG/QPJOBLOG~D000D2034A~[USERPROFILE]~849412~1.splf" <- path should be like this
-          // NOTE: Path issue with part names with underscores in them, underscore is a valid character in a system name.  
+          // INFO: Path issue with part names with underscores in them, underscore is a valid character in a system name.  
           //        Need a different job separator token or can we use more sub parts to the path??
           return parseGrepOutput(result.stdout || '', filter.name,
             path => connection.sysNameInLocal(path)); 

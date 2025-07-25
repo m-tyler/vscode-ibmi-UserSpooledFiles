@@ -2,7 +2,7 @@
   "name": "vscode-ibmi-userspooledfiles",
   "displayName": "Code for IBM i Spooled Files",
   "description": "Tools to view and manage spooled files on IBM i",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "preview": false,
   "license": "MIT",
   "engines": {
@@ -37,6 +37,10 @@
             "type": "string",
             "markdownDescription": "Additional spooled file name mapping pattern for when spooled files are opened or downloaded.\n\nValid values to choose from; \n- `name` \n- `number` \n- `status` \n- `creationTimestamp` \n- `userData` \n- `size` \n- `totalPages` \n- `pageLength` \n- `qualifiedJobName` \n- `jobName` \n- `jobUser` \n- `jobNumber` \n- `formType` \n- `queueLibrary` \n- `queue` \n\nSeparate selections with commas (,). You must reload the spooled file list for these changes to take affect.",
             "default": "name, jobName, jobUser, jobNumber, number"
+          },
+          "vscode-ibmi-splfbrowser.tempSpooledFileCleanup": {
+            "type": "boolean",
+            "markdownDescription": "When checked and VS Code closes, clean up left over temp spooled files from users %TMP% folder."
           }
         }
       }

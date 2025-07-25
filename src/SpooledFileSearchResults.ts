@@ -89,7 +89,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
             let splf: IBMiSplfCounts;
             splf = await IBMiContentSplf.getFilterSpooledFileCount(search.item, search.library, search.type, search.term);
             if (Number(splf.numberOf) > 0) {
-              // NOTE: if more messages are added, lower the timeout interval
+              // ATTENTION: if more messages are added, lower the timeout interval
               const timeoutInternal = 9000;
               const searchMessages = [
                 l10n.t(`'{0}' in {1} spooled files.`, search.term, search.splfName),

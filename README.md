@@ -20,6 +20,8 @@ Has support for:
 *  Tool tip hover for number of spooled files for user
 *  Tool tip hover for spooled file to show extra attributes
 *  Multi-spooled file selections for many actions.  
+*  Configuration for supplying a opened/downloaded spooled file name, see config name `vscode-ibmi-splfbrowser.spooledFileNamePattern`.
+*  Configuration option to clean up temporary spooled files, see config name `vscode-ibmi-splfbrowser.tempSpooledFileCleanup`.
 ---
 
 ## NOTES:
@@ -32,9 +34,8 @@ Has support for:
  * IBM i: Focus on User SPLF Browser View 
  * IBM i SPLF: add Spooled File Filter 
  * IBM i SPLF: close 
- * IBM i SPLF•. collapse All 
+ * IBM i SPLF: collapse All 
  * IBM i SPLF: Delete Spooled File Filter 
- * IBM i SPLF: Expand All 
  * IBM i SPLF: Refresh Spooled File Browser 
 ---
 

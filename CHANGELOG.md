@@ -1,4 +1,6 @@
 # Change Log
+## Version 1.1.2
+  * Added functionality to track and remove temp files used for downloaded spooled files opened into edit tabs
 
 ## Version 1.1.1 
   *  Bug when switching servers with different configuration of spooled file filters.

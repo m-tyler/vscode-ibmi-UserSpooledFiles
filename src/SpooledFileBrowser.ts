@@ -11,6 +11,7 @@ import { IBMiContentSplf } from "./api/IBMiContentSplf";
 import { Code4i } from "./tools";
 import { IBMISplfList, IBMiSpooledFile, SplfOpenOptions } from './typings';
 import SPLFBrowser, { SpooledFileFilter, SpooledFiles } from './views/SplfsView';
+import { TempFileManager } from './tools/tempFileManager';
 
 const writeFileAsync = util.promisify(fs.writeFile);
 
@@ -21,7 +22,7 @@ const splfBrowserViewer = vscode.window.createTreeView(
   showCollapseAll: true,
   canSelectMany: true,
 });
-export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
+export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, tempFileManager: TempFileManager) {
   context.subscriptions.push(
     splfBrowserViewer,
     vscode.workspace.registerFileSystemProvider(`spooledfile`, new SplfFS(context), {
@@ -588,7 +589,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
           splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path || '', options);
         });
         const tmpExt = path.extname(node.path);
-        const fileName = sanitize(path.basename(node.path, tmpExt)); //TODO: add name sanitation
+        const fileName = sanitize(path.basename(node.path, tmpExt));
         let localFilePathBase: string = '';
         if (!options.saveToPath) {
           if (!vscode.workspace.workspaceFolders || vscode.workspace.workspaceFolders.length !== 1) {
@@ -627,9 +628,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
             default:
             }
             await writeFileAsync(localPath, splfContent, fileEncoding);
-            if (!options.saveToPath) {
-              vscode.window.showInformationMessage(l10n.t(`Spooled File was downloaded.`));
-            }
+            tempFileManager.registerTempFile(localPath);
           } catch (e: unknown) {
             if (e instanceof Error) {
               vscode.window.showErrorMessage(l10n.t(`Error downloading Spoooled File! {0}.`, e));
@@ -642,6 +641,9 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext) {
       // } else {
       //   //Running from command pallet (F1).
       // }
+      if (localFileUris.length > 0) {
+        vscode.window.showInformationMessage(l10n.t(`One or more spooled File were downloaded.`));
+      }
       return localFileUris;
     }),
     vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfWithLineSpacing", async (node: SpooledFiles, nodes?: SpooledFiles[], options?: SplfOpenOptions) => {
