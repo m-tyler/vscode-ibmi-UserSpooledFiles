@@ -122,6 +122,9 @@
       ],
       "vscode-ibmi-splfbrowser.openSpooledFile": [
         {
+          "command": "vscode-ibmi-splfbrowser.openSplfWithDefault"
+        },
+        {
           "command": "vscode-ibmi-splfbrowser.openSplfWithLineSpacing"
         },
         {
@@ -280,6 +283,10 @@
           "when": "never"
         },
         {
+          "command": "vscode-ibmi-splfbrowser.openSplfWithDefault",
+          "when": "never"
+        },
+        {
           "command": "vscode-ibmi-splfbrowser.filterSpooledFiles",
           "when": "never"
         },
@@ -414,6 +421,12 @@
       {
         "command": "vscode-ibmi-splfbrowser.sortSPLFSFilesByDate",
         "title": "Date",
+        "category": "IBM i SPLF"
+      },
+      {
+        "command": "vscode-ibmi-splfbrowser.openSplfWithDefault",
+        "enablement": "code-for-ibmi:connected",
+        "title": "with Defaults",
         "category": "IBM i SPLF"
       },
       {

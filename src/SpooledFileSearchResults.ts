@@ -3,7 +3,7 @@ import { IBMiContentSplf } from "./api/IBMiContentSplf";
 import { SplfSearch } from './api/spooledFileSearch';
 import { Code4i, checkSystemFunctionState } from "./tools";
 import { SplfSearchView } from './views/SplfsSearchView';
-import { IBMiSplfCounts } from './typings';
+import { IBMiSplfCounts, IBMISplfList } from './typings';
 
 interface SearchParms {
   item: any,
@@ -87,7 +87,9 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
               message: l10n.t(`'{0}' in {1}, {2} spooled files.`, search.term, search.item, search.splfName)
             });
             let splf: IBMiSplfCounts;
-            splf = await IBMiContentSplf.getFilterSpooledFileCount(search.item, search.library, search.type, search.term);
+            splf = await IBMiContentSplf.getFilterSpooledFileCount( { name: search.item, library: search.library, type: search.type } as IBMISplfList
+              , search.term
+            );
             if (Number(splf.numberOf) > 0) {
               // ATTENTION: if more messages are added, lower the timeout interval
               const timeoutInternal = 9000;

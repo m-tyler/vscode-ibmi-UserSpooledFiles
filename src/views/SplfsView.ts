@@ -70,6 +70,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
             const objects = await IBMiContentSplf.getSpooledFileFilter({ name: element.name, library: element.library, type: element.type } as IBMISplfList, element.sort, undefined, element.filter);
             items.push(...objects
               .map((object: IBMiSpooledFile) => new SpooledFiles(`splf`, element, object)));
+            element.setRecordCount(objects.length);
 
           } catch (e: any) {
             // console.log(e);
@@ -131,9 +132,10 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
     if (item instanceof SpooledFileFilter) {
       // TypeScript knows 'param' is of type MyClass here
       // console.log(`in resolveTreeItem, item is an instance of SpooledFileFilter`);
-      const splfNum = await IBMiContentSplf.getFilterSpooledFileCount(item.name, item.library, item.type, item.filter);
+      const splfNum = await IBMiContentSplf.getFilterSpooledFileCount({ name: item.name, library: item.library, type: item.type } as IBMISplfList
+        , item.filter);
       const splfFilterInfo = await IBMiContentSplf.getFilterDescription([item.name], item.library, item.type);
-      item.numberOf = splfNum.numberOf;
+      item.setRecordCount(Number(splfNum.numberOf));
       item.itemText = splfFilterInfo[0].text || ``;
       if (splfFilterInfo[0].library && (item.library === '' || item.library === '*LIBL')) { item.library = splfFilterInfo[0].library; }
 
@@ -149,7 +151,8 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
       // console.log(`in resolveTreeItem, 'item' is an instance of SpooledFiles`);
       const info = await IBMiContentSplf.getSpooledFileDeviceType([item.queue], [item.queueLibrary], [item.name], [item.jobUser]
         , item.qualifiedJobName, item.number);
-      item.pageLength = await IBMiContentSplf.getSpooledPageLength(item.queue, item.queueLibrary, item.name, item.qualifiedJobName, item.number);
+      const pageLength = await IBMiContentSplf.getSpooledPageLength([item.queue], [item.queueLibrary], [item.name], item.qualifiedJobName, item.number);
+      item.pageLength = pageLength[0].pageLength||'68';
       item.deviceType = info[0].deviceType || '*SCS';
       item.tooltip = new vscode.MarkdownString(`<table>`
         .concat(`<thead>${item.path.split(`/`)[2]}</thead><hr>`)
@@ -182,7 +185,7 @@ export class SpooledFileFilter extends vscode.TreeItem {
   description: string;
   filter: string; // reduces tree items to matching tokens
   itemText: string;
-  numberOf: string;
+  numberOf: number | undefined;
   readonly sort: SortOptions = { order: "date", ascending: true };
   constructor(contextType: string, parent: vscode.TreeItem, theFilter: IBMISplfList, currentUser: string) {
     super(theFilter.name, vscode.TreeItemCollapsibleState.Collapsed);
@@ -203,7 +206,6 @@ export class SpooledFileFilter extends vscode.TreeItem {
 
     this.filter = '';
     this.itemText = '';
-    this.numberOf = '';
   }
   /** @type {import("../api/IBMiContent").SortOptions}*/
   sortBy(sort: SortOptions) {
@@ -221,6 +223,7 @@ export class SpooledFileFilter extends vscode.TreeItem {
   }
   clearToolTip() { this.tooltip = undefined; }
   // setDescription(value: string | boolean) { this.description = (value?value:``)+this.sortDescription; }
+  setRecordCount(amount: number) {this.numberOf = amount;}
 }
 
 export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {

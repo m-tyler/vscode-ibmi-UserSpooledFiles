@@ -208,7 +208,6 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
               commands += `DLTSPLF FILE(${node.name}) JOB(${node.jobNumber}/${node.jobUser}/${node.jobName}) SPLNBR(${node.number})\n`;
             }
             await connection.runCommand({
-              // command: `DLTSPLF FILE(${node.name}) JOB(${node.jobNumber}/${node.jobUser}/${node.jobName}) SPLNBR(${node.number})`
               command: commands
               , environment: `ile`
             });
@@ -272,16 +271,10 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
             await Code4i.getContent().uploadMemberContent(tempLib, TempFileName, TempMbrName, dltCmdSrc);
             let dltCommands = `SBMJOB CMD(RUNSQLSTM SRCFILE(${tempLib}/${TempFileName}) SRCMBR(${TempMbrName}) COMMIT(*NC) MARGINS(*SRCFILE) OPTION(*NOLIST)) JOB(DLTSPLFS) JOBQ(QUSRNOMAX) MSGQ(*NONE)`
               ;
-            const commandResult = await connection.runCommand({
+            await connection.runCommand({
               command: dltCommands
               , environment: `ile`
             });
-            if (commandResult) {
-              // vscode.window.showInformationMessage(` ${commandResult.stdout}.`);
-              if (commandResult.code === 0 || commandResult.code === null) {
-              } else {
-              }
-            }
 
           }
           catch (e: unknown) {
@@ -350,16 +343,10 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
             await Code4i.getContent().uploadMemberContent(tempLib, TempFileName, TempMbrName, dltCmdSrc);
             let dltCommands = `SBMJOB CMD(RUNSQLSTM SRCFILE(${tempLib}/${TempFileName}) SRCMBR(${TempMbrName}) COMMIT(*NC) MARGINS(*SRCFILE) OPTION(*NOLIST)) JOB(DLTSPLFS) JOBQ(QUSRNOMAX) MSGQ(*NONE)`
               ;
-            const commandResult = await connection.runCommand({
+            await connection.runCommand({
               command: dltCommands
               , environment: `ile`
             });
-            if (commandResult) {
-              // vscode.window.showInformationMessage(` ${commandResult.stdout}.`);
-              if (commandResult.code === 0 || commandResult.code === null) {
-              } else {
-              }
-            }
 
           } catch (e: unknown) {
             if (e instanceof Error) {
@@ -406,16 +393,10 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
           const connection = getConnection();
 
           try {
-            const commandResult = await connection.runCommand({
+            await connection.runCommand({
               command: `DLTSPLF FILE(*SELECT) SELECT(*CURRENT)`
               , environment: `ile`
             });
-            if (commandResult) {
-              // vscode.window.showInformationMessage(` ${commandResult.stdout}.`);
-              if (commandResult.code === 0 || commandResult.code === null) {
-              } else {
-              }
-            }
 
             vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
           } catch (e: unknown) {
@@ -454,7 +435,6 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
               commands += `CHGSPLFA FILE(${node.name}) JOB(${node.qualifiedJobName}) SPLNBR(${node.number}) OUTQ(${newQueue})\n`;
             }
             await connection.runCommand({
-              // command: `CHGSPLFA FILE(${node.name}) JOB(${node.qualifiedJobName}) SPLNBR(${node.number}) OUTQ(${newQueue})`
               command: commands
               , environment: `ile`
             });
@@ -499,7 +479,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
               message: l10n.t(`Filtering spooled files for {0}, using these words, {1} spooled files.`, searchName, searchTerm),
             });
             searchTerm = searchTerm.toLocaleUpperCase();
-            const splfnum = await IBMiContentSplf.getFilterSpooledFileCount(searchName, node.library, node.type);
+            const splfnum = await IBMiContentSplf.getFilterSpooledFileCount({ name: searchName, library: node.library, type: node.type } as IBMISplfList );
             if (Number(splfnum.numberOf) > 0) {
               if (node.contextValue === `spooledfile`) {
                 node.parent.setFilter(searchTerm);
@@ -662,6 +642,35 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       };
       nodes = await IBMiContentSplf.updateSpooledFilePageSize(nodes);
       vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing", node, nodes, options)
+        .then(async (localFileUris) => {
+          try {
+            for (let localFileUri of localFileUris as vscode.Uri[]) {
+              await vscode.commands.executeCommand(`vscode.open`, localFileUri);
+            }
+            return true;
+          } catch (e) {
+            console.log(e);
+            return false;
+          }
+        })
+        ;
+    }),
+    vscode.commands.registerCommand("vscode-ibmi-splfbrowser.openSplfWithDefault", async (node: SpooledFiles, nodes?: SpooledFiles[], options?: SplfOpenOptions) => {
+      nodes = nodes || [];
+      if (node && nodes && nodes.length === 0) {
+        nodes.push(node);
+      }
+      if (!nodes || nodes.length === 0) { return; }
+      options = {
+        readonly: options?.readonly || node.protected || false,
+        openMode: options?.openMode || "withSpaces",
+        position: options?.position || undefined,
+        fileExtension: options?.fileExtension || `SPLF`,
+        saveToPath: options?.saveToPath || os.tmpdir(),
+        tempPath: true
+      };
+      nodes = await IBMiContentSplf.updateNodeSpooledFilePageSize(nodes);
+      vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileDefault", node, nodes, options)
         .then(async (localFileUris) => {
           try {
             for (let localFileUri of localFileUris as vscode.Uri[]) {
