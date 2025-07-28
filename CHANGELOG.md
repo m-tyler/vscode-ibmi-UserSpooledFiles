@@ -1,6 +1,7 @@
 # Change Log
 ## Version 1.1.2
   * Added functionality to track and remove temp files used for downloaded spooled files opened into edit tabs
+  * Made fix for issue #15, Open spooled file needs a default open option
 
 ## Version 1.1.1 
   *  Bug when switching servers with different configuration of spooled file filters.

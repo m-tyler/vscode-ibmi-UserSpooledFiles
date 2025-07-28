@@ -67,10 +67,10 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
         case `splflist`:
           //Fetch spooled files
           try {
-            const objects = await IBMiContentSplf.getSpooledFileFilter({ name: element.name, library: element.library, type: element.type } as IBMISplfList, element.sort, undefined, element.filter);
-            items.push(...objects
-              .map((object: IBMiSpooledFile) => new SpooledFiles(`splf`, element, object)));
-            element.setRecordCount(objects.length);
+            const splfs = await IBMiContentSplf.getSpooledFileFilter({ name: element.name, library: element.library, type: element.type } as IBMISplfList, element.sort, undefined, element.filter);
+            items.push(...splfs
+              .map((splf: IBMiSpooledFile) => new SpooledFiles(`splf`, element, splf)));
+            element.setRecordCount(splfs.length);
 
           } catch (e: any) {
             // console.log(e);
@@ -130,8 +130,6 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
    */
   async resolveTreeItem(item: SpooledFileFilter | SpooledFiles, element: any, token: vscode.CancellationToken): Promise<vscode.TreeItem> {
     if (item instanceof SpooledFileFilter) {
-      // TypeScript knows 'param' is of type MyClass here
-      // console.log(`in resolveTreeItem, item is an instance of SpooledFileFilter`);
       const splfNum = await IBMiContentSplf.getFilterSpooledFileCount({ name: item.name, library: item.library, type: item.type } as IBMISplfList
         , item.filter);
       const splfFilterInfo = await IBMiContentSplf.getFilterDescription([item.name], item.library, item.type);
@@ -148,10 +146,10 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
       );
       item.tooltip.supportHtml = true;
     } else if (item instanceof SpooledFiles) {
-      // console.log(`in resolveTreeItem, 'item' is an instance of SpooledFiles`);
       const info = await IBMiContentSplf.getSpooledFileDeviceType([item.queue], [item.queueLibrary], [item.name], [item.jobUser]
         , item.qualifiedJobName, item.number);
-      const pageLength = await IBMiContentSplf.getSpooledPageLength([item.queue], [item.queueLibrary], [item.name], item.qualifiedJobName, item.number);
+      const pageLength = await IBMiContentSplf.getSpooledPageLength([item.queue], [item.queueLibrary], [item.name], [item.jobUser]
+        , item.qualifiedJobName, item.number);
       item.pageLength = pageLength[0].pageLength||'68';
       item.deviceType = info[0].deviceType || '*SCS';
       item.tooltip = new vscode.MarkdownString(`<table>`
@@ -252,39 +250,39 @@ export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
   /**
    * @param {"splf"} type
    * @param {vscode.TreeItem} parent
-   * @param {IBMiSpooledFile} object
+   * @param {IBMiSpooledFile} inp
    * @param {IBMiSplfUser} filter
    */
-  constructor(type: string, parent: SpooledFileFilter, object: IBMiSpooledFile) {
+  constructor(type: string, parent: SpooledFileFilter, inp: IBMiSpooledFile) {
 
     const icon = objectIcons[`${type}`] || objectIcons[``];
-    super(`${object.name}.${type}`, vscode.TreeItemCollapsibleState.Collapsed);
+    super(`${inp.name}.${type}`, vscode.TreeItemCollapsibleState.Collapsed);
     this.collapsibleState = vscode.TreeItemCollapsibleState.None;
 
     this.parent = parent;
     this.type = type;
     // Layout of IBMiSpooledFile
-    this.name = object.name;
-    this.number = object.number;
-    this.status = object.status || '';
-    this.creationTimestamp = object.creationTimestamp || '';
-    this.userData = object.userData || '';
-    this.size = object.size || 0;
-    this.totalPages = object.totalPages || 0;
-    this.pageLength = object.pageLength || '';
-    this.qualifiedJobName = object.qualifiedJobName;
-    this.jobName = object.jobName || '';
-    this.jobUser = object.jobUser || '';
-    this.jobNumber = object.jobNumber || '';
-    this.formType = object.formType || '';
-    this.queueLibrary = object.queueLibrary;
-    this.queue = object.queue;
+    this.name = inp.name;
+    this.number = inp.number;
+    this.status = inp.status || '';
+    this.creationTimestamp = inp.creationTimestamp || '';
+    this.userData = inp.userData || '';
+    this.size = inp.size || 0;
+    this.totalPages = inp.totalPages || 0;
+    this.pageLength = inp.pageLength || '';
+    this.qualifiedJobName = inp.qualifiedJobName;
+    this.jobName = inp.jobName || '';
+    this.jobUser = inp.jobUser || '';
+    this.jobNumber = inp.jobNumber || '';
+    this.formType = inp.formType || '';
+    this.queueLibrary = inp.queueLibrary;
+    this.queue = inp.queue;
 
     this.description = l10n.t(`- {0} - Pages: {1}, Time: {2} `, this.status, this.totalPages, this.creationTimestamp.substring(11));
     this.iconPath = new vscode.ThemeIcon(icon);
     this.protected = parent.protected;
     this.contextValue = `spooledfile${this.protected ? `_readonly` : ``}`;
-    this.resourceUri = getSpooledFileUri(parent.type, object, parent.protected ? { readonly: true } : undefined) || '';
+    this.resourceUri = getSpooledFileUri(parent.type, inp, parent.protected ? { readonly: true } : undefined) || '';
     this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
     this.deviceType = ``;
 

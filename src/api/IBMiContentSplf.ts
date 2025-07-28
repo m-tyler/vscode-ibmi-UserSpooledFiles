@@ -16,6 +16,21 @@ export type SortOptions = {
   order: "name" | "date" | "?"
   ascending?: boolean
 };
+// Generic filtering function
+function filterNodes<T>(
+  nodes: T[],
+  predicate: (node: T) => boolean // Accepts a predicate function as a parameter.
+): T[] {
+  return nodes.filter(predicate);
+}
+
+function isInvalidPageLength(node: IBMiSpooledFile): boolean {
+  return node.pageLength === undefined || node.pageLength === null || node.pageLength === '0';
+}
+
+function isInvalidDeviceType(node: IBMiSpooledFile): boolean {
+  return node.deviceType === undefined || node.deviceType === ``;
+}
 export namespace IBMiContentSplf {
   /**
   * @param {IBMISplfList} treeFilter 
@@ -55,22 +70,22 @@ export namespace IBMiContentSplf {
 
     let searchWords_ = searchWords?.split(' ') || [];
     let returnSplfList = results
-      .map(object => ({
-        name: connection.sysNameInLocal(String(object.SPOOLED_FILE_NAME)),
-        number: object.SPOOLED_FILE_NUMBER,
-        status: connection.sysNameInLocal(String(object.STATUS)),
-        creationTimestamp: object.CREATION_TIMESTAMP,
-        userData: connection.sysNameInLocal(String(object.USER_DATA)) ?? undefined,
-        size: Number(object.SIZE),
-        totalPages: Number(object.TOTAL_PAGES),
+      .map(result => ({
+        name: connection.sysNameInLocal(String(result.SPOOLED_FILE_NAME)),
+        number: result.SPOOLED_FILE_NUMBER,
+        status: connection.sysNameInLocal(String(result.STATUS)),
+        creationTimestamp: result.CREATION_TIMESTAMP,
+        userData: connection.sysNameInLocal(String(result.USER_DATA)) ?? undefined,
+        size: Number(result.SIZE),
+        totalPages: Number(result.TOTAL_PAGES),
         pageLength: String('0'),
-        qualifiedJobName: connection.sysNameInLocal(String(object.QUALIFIED_JOB_NAME)),
-        jobName: connection.sysNameInLocal(String(object.JOB_NAME)),
-        jobUser: connection.sysNameInLocal(String(object.JOB_USER)),
-        jobNumber: String(object.JOB_NUMBER),
-        formType: connection.sysNameInLocal(String(object.FORM_TYPE)),
-        queueLibrary: connection.sysNameInLocal(String(object.OUTPUT_QUEUE_LIBRARY)),
-        queue: connection.sysNameInLocal(String(object.OUTPUT_QUEUE)),
+        qualifiedJobName: connection.sysNameInLocal(String(result.QUALIFIED_JOB_NAME)),
+        jobName: connection.sysNameInLocal(String(result.JOB_NAME)),
+        jobUser: connection.sysNameInLocal(String(result.JOB_USER)),
+        jobNumber: String(result.JOB_NUMBER),
+        formType: connection.sysNameInLocal(String(result.FORM_TYPE)),
+        queueLibrary: connection.sysNameInLocal(String(result.OUTPUT_QUEUE_LIBRARY)),
+        queue: connection.sysNameInLocal(String(result.OUTPUT_QUEUE)),
       } as IBMiSpooledFile))
       .filter(obj => searchWords_.length === 0 || searchWords_.some(term => Object.values(obj).join(" ").includes(term)))
       ;
@@ -190,24 +205,33 @@ export namespace IBMiContentSplf {
    * @param {string} spflNum - optional - Spooled File name+job sequence number
    * @returns a promised IBMiSpooledFile array, with the page length value 
   */
-  export async function getSpooledPageLength(queues: string[], queueLibraries: string[], splfNames: string[]
+  export async function getSpooledPageLength(queues: string[], queueLibraries: string[], splfNames: string[], jobUsers: string[]
     , qualifiedJobName?: string, splfNum?: string): Promise<IBMiSpooledFile[]> {
     const OBJS = queues.map(queue => `'${queue}'`).join(', ');
     const OBJLIBS = queueLibraries.map(queueLibrary => `'${queueLibrary}'`).join(', ');
     const FILES = splfNames?.map(splfName => `'${splfName}'`).join(', ') || '';
-    const objQuery = `select OUTPUT_QUEUE_NAME, OUTPUT_QUEUE_LIBRARY_NAME,PAGE_LENGTH
-    from QSYS2.OUTPUT_QUEUE_ENTRIES
-    where OUTQLIB in (${OBJLIBS}) and OUTQ in (${OBJS}) 
-    ${FILES ? `and QE.SPOOLED_FILE_NAME in (${FILES})` : ``}
-    ${qualifiedJobName ? ` and QE.JOB_NAME = '${qualifiedJobName}'` : ''}
-    ${splfNum ? ` and QE.FILE_NUMBER = ${splfNum}` : ''}
-    `.replace(/\n\s*/g, ' ');
+    const USERS = jobUsers?.map(jobUser => `'${jobUser}'`).join(', ') || '';
+    const objQuery = `select QE.OUTPUT_QUEUE_NAME ,QE.OUTPUT_QUEUE_LIBRARY_NAME
+        ,QE.SPOOLED_FILE_NAME ,QE.FILE_NUMBER ,QE.JOB_NAME ,QE.USER_DATA ,QE.USER_NAME
+        ,QE.PAGE_LENGTH
+      from QSYS2.OUTPUT_QUEUE_ENTRIES QE
+      where OUTQLIB in (${OBJLIBS}) and OUTQ in (${OBJS}) 
+      ${FILES ? `and QE.SPOOLED_FILE_NAME in (${FILES})` : ``}
+      ${USERS ? `and QE.USER_NAME in (${USERS})` : ``}
+      ${qualifiedJobName ? ` and QE.JOB_NAME = '${qualifiedJobName}'` : ''}
+      ${splfNum ? ` and QE.FILE_NUMBER = ${splfNum}` : ''}
+      `.replace(/\n\s*/g, ' ');
     let results = await Code4i.runSQL(objQuery);
     let pageLengths: IBMiSpooledFile[] = [];
     if (results.length >= 0) {
       pageLengths = results.map(result => ({
+        queue: String(result.OUTPUT_QUEUE_NAME),
+        queueLibrary: String(result.OUTPUT_QUEUE_LIBRARY_NAME),
         name: String(result.SPOOLED_FILE_NAME),
+        qualifiedJobName: String(result.JOB_NAME),
         number: result.FILE_NUMBER,
+        userData: String(result.USER_DATA),
+        jobUser: String(result.USER_NAME),
         pageLength: String(result.PAGE_LENGTH)
       } as IBMiSpooledFile));
     } else {
@@ -345,7 +369,8 @@ export namespace IBMiContentSplf {
   export async function updateNodeSpooledFileDeviceType(nodes: SpooledFiles[]): Promise<SpooledFiles[]> {
     const modifiedNodes: SpooledFiles[] = [];
     let deviceTypes: IBMiSpooledFile[];
-    const filteredNodes: IBMiSpooledFile[] = nodes.filter(node => node.deviceType === undefined || node.deviceType === ``);
+    // const filteredNodes: IBMiSpooledFile[] = nodes.filter(nodes => node.deviceType === undefined || node.deviceType === ``);
+    const filteredNodes: IBMiSpooledFile[] = filterNodes(nodes, isInvalidDeviceType);
     const distinctNames: string[] = [...new Set(filteredNodes.map(node => node.name))];
     const distinctUsers: string[] = [...new Set(filteredNodes.map(node => node.jobUser || ''))];
     const distinctQueues: string[] = [...new Set(filteredNodes.map(node => node.queue))];
@@ -374,22 +399,29 @@ export namespace IBMiContentSplf {
   export async function updateNodeSpooledFilePageSize(nodes: SpooledFiles[]): Promise<SpooledFiles[]> {
     const modifiedNodes: SpooledFiles[] = [];
     let pageLengths: IBMiSpooledFile[];
-    const filteredNodes: IBMiSpooledFile[] = nodes.filter(node => node.deviceType === undefined || node.deviceType === ``);
+    const filteredNodes: IBMiSpooledFile[] = filterNodes(nodes, isInvalidPageLength);
+    // const filteredNodes: IBMiSpooledFile[] = nodes.filter(node => node.pageLength === undefined || node.pageLength === `` || node.pageLength === `0`);
     const distinctNames: string[] = [...new Set(filteredNodes.map(node => node.name))];
     const distinctUsers: string[] = [...new Set(filteredNodes.map(node => node.jobUser || ''))];
     const distinctQueues: string[] = [...new Set(filteredNodes.map(node => node.queue))];
     const distinctLibraries: string[] = [...new Set(filteredNodes.map(node => node.queueLibrary))];
     if (filteredNodes.length === 1) {
-      pageLengths = await getSpooledPageLength(distinctQueues, distinctLibraries, distinctNames
+      pageLengths = await getSpooledPageLength(distinctQueues, distinctLibraries, distinctNames, distinctUsers
         , nodes[0].qualifiedJobName, nodes[0].number);
     } else if (filteredNodes.length > 1) {
-      pageLengths = await getSpooledPageLength(distinctQueues, distinctLibraries, distinctNames);
+      pageLengths = await getSpooledPageLength(distinctQueues, distinctLibraries, distinctNames, distinctUsers);
     } else {
       return nodes;
     }
+    // Apply the page lengths to the correct node entry.
     for (const node of nodes) {
       if (!node.deviceType || node.deviceType?.length === 0) {
-        const SPLF = pageLengths.find(pL => pL.name === node.name && pL.qualifiedJobName === node.qualifiedJobName && pL.number === node.number);
+        const SPLF = pageLengths.find(pL => pL.name === node.name
+          && pL.queue === node.queue
+          && pL.queueLibrary === node.queueLibrary
+          && pL.qualifiedJobName === node.qualifiedJobName
+          && pL.userData === node.userData
+          && pL.number === node.number);
         node.pageLength = SPLF?.pageLength || node.pageLength || '68';
       }
       modifiedNodes.push(node);
@@ -412,6 +444,7 @@ export namespace IBMiContentSplf {
     } else {
       return items;
     }
+    // Apply device type value to the correct node entry.
     for (const item of items) {
       if (!item.deviceType || item.deviceType?.length === 0) {
         const SPLF = deviceTypes.find(dT => dT.name === item.name && dT.qualifiedJobName === item.qualifiedJobName && dT.number === item.number);
