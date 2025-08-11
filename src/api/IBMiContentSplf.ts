@@ -2,7 +2,7 @@ import fs from 'fs';
 import tmp from 'tmp';
 import util from 'util';
 import vscode, { l10n, Uri } from 'vscode';
-import { breakUpSpooledFileName, Code4i } from '../tools';
+import { breakUpPathFileName, Code4i } from '../tools';
 import { IBMiSpooledFile, SplfOpenOptions, IBMiSplfCounts, IBMISplfList } from '../typings';
 import { CommandResult } from '@halcyontech/vscode-ibmi-types';
 import { SpooledFiles } from '../views/SplfsView';
@@ -102,7 +102,7 @@ export namespace IBMiContentSplf {
   */
   export async function downloadSpooledFileContent(pPath: string, options: SplfOpenOptions): Promise<string> {
     pPath = pPath.replace(/^\/+/, '') || '';
-    const parts = breakUpSpooledFileName(pPath);
+    const parts = breakUpPathFileName(pPath);
 
     const connection = Code4i.getConnection();
     const tempRmt = connection.getTempRemote(pPath);
@@ -369,7 +369,6 @@ export namespace IBMiContentSplf {
   export async function updateNodeSpooledFileDeviceType(nodes: SpooledFiles[]): Promise<SpooledFiles[]> {
     const modifiedNodes: SpooledFiles[] = [];
     let deviceTypes: IBMiSpooledFile[];
-    // const filteredNodes: IBMiSpooledFile[] = nodes.filter(nodes => node.deviceType === undefined || node.deviceType === ``);
     const filteredNodes: IBMiSpooledFile[] = filterNodes(nodes, isInvalidDeviceType);
     const distinctNames: string[] = [...new Set(filteredNodes.map(node => node.name))];
     const distinctUsers: string[] = [...new Set(filteredNodes.map(node => node.jobUser || ''))];
@@ -400,7 +399,6 @@ export namespace IBMiContentSplf {
     const modifiedNodes: SpooledFiles[] = [];
     let pageLengths: IBMiSpooledFile[];
     const filteredNodes: IBMiSpooledFile[] = filterNodes(nodes, isInvalidPageLength);
-    // const filteredNodes: IBMiSpooledFile[] = nodes.filter(node => node.pageLength === undefined || node.pageLength === `` || node.pageLength === `0`);
     const distinctNames: string[] = [...new Set(filteredNodes.map(node => node.name))];
     const distinctUsers: string[] = [...new Set(filteredNodes.map(node => node.jobUser || ''))];
     const distinctQueues: string[] = [...new Set(filteredNodes.map(node => node.queue))];

@@ -166,21 +166,25 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.sortSpooledFileFilter`, async (node) => {
       /** @type {ConnectionConfiguration.Parameters} */
-      const config = getConfig();
+      const config = Code4i.getConfig();
+      let spooledFileConfig: IBMISplfList[] = config[`messageQueues`] || [];
 
-      config.SpooledFileConfig.sort(
-        (filter1: IBMISplfList, filter2: IBMISplfList) => filter1.name.toLowerCase().localeCompare(filter2.name.toLowerCase())
+      spooledFileConfig.sort(
+        (filter1: IBMISplfList, filter2: IBMISplfList) => {
+          const primarySort = filter1.library.toLowerCase().localeCompare(filter2.library.toLowerCase());
+
+          // If the primary sort results in a difference (not equal)
+          if (primarySort !== 0) {
+            return primarySort;
+          }
+
+          // If the primary sort is equal (primarySort === 0), then sort by the second condition
+          // Assuming 'priority' is a number, for descending order
+          return filter1.name.toLowerCase().localeCompare(filter2.name.toLowerCase());
+        }
       );
       try {
 
-        // SpooledFileConfig.sort(function (a: string, b: string): number {
-        //   let x = a.toLowerCase();
-        //   let y = b.toLowerCase();
-        //   if (x < y) { return -1; }
-        //   if (x > y) { return 1; }
-        //   return 0;
-        // });
-        // config.SpooledFileConfig = SpooledFileConfig;
         Code4i.getInstance()!.setConfig(config);
         vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.refreshSPLFBrowser`, node);
       } catch (e) {
@@ -640,7 +644,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
         saveToPath: options?.saveToPath || os.tmpdir(),
         tempPath: true
       };
-      nodes = await IBMiContentSplf.updateSpooledFilePageSize(nodes);
+      nodes = await IBMiContentSplf.updateNodeSpooledFilePageSize(nodes);
       vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing", node, nodes, options)
         .then(async (localFileUris) => {
           try {

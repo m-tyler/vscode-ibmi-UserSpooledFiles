@@ -1,6 +1,6 @@
 import { stringify, parse, ParsedUrlQueryInput, ParsedUrlQuery } from "querystring";
 import vscode, { FilePermission, l10n } from "vscode";
-import { Code4i, buildSpooledFileNamefromPattern } from "../../tools";
+import { Code4i, buildPathFileNamefromPattern } from "../../tools";
 import { IBMiSpooledFile, SplfOpenOptions } from "../../typings";
 import { IBMiContentSplf } from "../../api/IBMiContentSplf";
 import fs from 'fs';
@@ -10,7 +10,7 @@ import util from 'util';
 const writeFileAsync = util.promisify(fs.writeFile);
 
 export function getSpooledFileUri(filterType:string, splf: IBMiSpooledFile, options?: SplfOpenOptions) {
-  let path = buildSpooledFileNamefromPattern( filterType, splf );
+  let path = buildPathFileNamefromPattern( filterType, splf );
   if (path.length === 0) {
     path =`${splf.jobUser}/${splf.queue}/${splf.name}~${splf.jobName}~${splf.jobUser}~${splf.jobNumber}~${splf.number}`;
   }

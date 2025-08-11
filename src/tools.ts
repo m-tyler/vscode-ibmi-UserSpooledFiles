@@ -104,7 +104,7 @@ export function nthIndex(aString: string, pattern: string, n: number) {
 // export async function checkObject(library: string, name: string, type: string) {
 //   return await Code4i.getContent().checkObject({ library, name, type });
 // };
-export function buildSpooledFileNamefromPattern(filterType: string, splf: IBMiSpooledFile): string {
+export function buildPathFileNamefromPattern(filterType: string, splf: IBMiSpooledFile): string {
   let newName = ``;
   if (filterType === 'OUTQ') {
     newName = `${splf.queueLibrary}/${splf.queue}/`;
@@ -182,7 +182,7 @@ export function getMyConfig(configName: string) {
 
   return mySpooledConfig;
 }
-export function breakUpSpooledFileName(pPath: string): Map<string,string> {
+export function breakUpPathFileName(pPath: string): Map<string,string> {
   let counter = 0;
   // get from config
   const myConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');

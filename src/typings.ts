@@ -20,7 +20,7 @@ export interface IBMiSpooledFile {
 }  
 export interface IBMISplfList {
   name: string
-  library?: string
+  library: string
   text?: string
   type: string
 }  
