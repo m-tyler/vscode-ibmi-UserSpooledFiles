@@ -1,4 +1,7 @@
 # Change Log
+## Version 1.1.3
+  * Fix bad command name for delete all spooled files
+  * Fixed capitalization on command titles. 
 ## Version 1.1.2
   * Added functionality to track and remove temp files used for downloaded spooled files opened into edit tabs
   * Made fix for issue #15, Open spooled file needs a default open option
