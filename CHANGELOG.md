@@ -2,7 +2,8 @@
 ## Version 1.1.3
   * Made fix for when user select name patterns for spooled file tab, CPYSPLF continues to work.
   * Search issue from version 1.1.2 update, search returned no spooled files to search through.
-
+  * Fix bad command name for delete all spooled files
+  * Fixed capitalization on command titles. 
   
 ## Version 1.1.2
   * Added functionality to track and remove temp files used for downloaded spooled files opened into edit tabs
