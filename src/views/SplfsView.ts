@@ -3,8 +3,8 @@ import { SortOptions } from '@halcyontech/vscode-ibmi-types/api/IBMiContent';
 import vscode, { l10n, TreeDataProvider } from 'vscode';
 import { IBMiContentSplf } from "../api/IBMiContentSplf";
 import { getSpooledFileUri } from '../filesystem/qsys/SplfFs';
-import { Code4i, getMyConfig } from '../tools';
-import { IBMISplfList, IBMiSpooledFile } from '../typings';
+import { Code4i } from '../tools';
+import { IBMISplfList, IBMiSpooledFile, SplfOpenOptions } from '../typings';
 
 
 //https://code.visualstudio.com/api/references/icons-in-labels
@@ -84,10 +84,10 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
 
         // } else if (this.data) { // no context exists in tree yet, get from settings if present
         // items.push( ...this.data.map(
-          //     (theFilter: IBMISplfList) => new SpooledFileFilter(`splflist`, element, theFilter, connection.currentUser)
-          //   ));
-      // }
-        } else if (config.SpooledFileConfig) { // no context exists in tree yet, get from settings if present
+        //     (theFilter: IBMISplfList) => new SpooledFileFilter(`splflist`, element, theFilter, connection.currentUser)
+        //   ));
+        // }
+      } else if (config.SpooledFileConfig) { // no context exists in tree yet, get from settings if present
         items.push(...config.SpooledFileConfig.map(
           (theFilter: IBMISplfList) => new SpooledFileFilter(`splflist`, element, theFilter, connection.currentUser)
         ));
@@ -129,6 +129,8 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
    * @returns {ProviderResult<vscode.TreeItem>};
    */
   async resolveTreeItem(item: SpooledFileFilter | SpooledFiles, element: any, token: vscode.CancellationToken): Promise<vscode.TreeItem> {
+    const showDebugInfo = process.env.SHOW_DEBUG_INFO === 'true' || vscode.debug.activeDebugSession !== undefined;
+
     if (item instanceof SpooledFileFilter) {
       const splfNum = await IBMiContentSplf.getFilterSpooledFileCount({ name: item.name, library: item.library, type: item.type } as IBMISplfList
         , item.filter);
@@ -150,20 +152,37 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
         , item.qualifiedJobName, item.number);
       const pageLength = await IBMiContentSplf.getSpooledPageLength([item.queue], [item.queueLibrary], [item.name], [item.jobUser]
         , item.qualifiedJobName, item.number);
-      item.pageLength = pageLength[0].pageLength||'68';
+      item.pageLength = pageLength[0].pageLength || '68';
       item.deviceType = info[0].deviceType || '*SCS';
       item.tooltip = new vscode.MarkdownString(`<table>`
         .concat(`<thead>${item.path.split(`/`)[2]}</thead><hr>`)
-        .concat(item.qualifiedJobName ? `<tr><td style="text-align: right;">${l10n.t(`Job:`)}</td><td>&nbsp;${item.qualifiedJobName}</td></tr>` : ``)
-        .concat(item.number ? `<tr><td>${l10n.t(`File Number:`)}</td><td>&nbsp;${item.number}</td></tr>` : ``)
-        .concat(item.userData ? `<tr><td>${l10n.t(`UserData:`)}</td><td>&nbsp;${item.userData}</td></tr>` : ``)
-        .concat(item.creationTimestamp ? `<tr><td>${l10n.t(`Created:`)}</td><td>&nbsp;${item.creationTimestamp}</td></tr>` : ``)
-        .concat(item.size ? `<tr><td>${l10n.t(`Size in bytes:`)}</td><td>&nbsp;${item.size}</td></tr>` : ``)
-        .concat(item.pageLength ? `<tr><td>${l10n.t(`Page Length:`)}</td><td>&nbsp;${item.pageLength}</td></tr>` : ``)
-        .concat(item.formType ? `<tr><td>${l10n.t(`Form Type:`)}</td><td>&nbsp;${item.formType}</td></tr>` : ``)
-        .concat(item.queue ? `<tr><td>${l10n.t(`Output Queue:`)}</td><td>&nbsp;${item.queueLibrary, item.queue}</td></tr>` : ``)
-        .concat(item.deviceType ? `<tr><td>${l10n.t(`Device Type:`)}</td><td>&nbsp;${item.deviceType}</td></tr>` : ``)
-        .concat(item.parent.filter ? `<tr><td>${l10n.t(`Filter:`)}</td><td>&nbsp;${item.parent.filter}</td></tr>` : ``)
+        .concat(`<tr><td style="text-align: right;">${l10n.t(`Job:`)}</td><td>&nbsp;${l10n.t(item.qualifiedJobName)}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`File Number:`)}</td><td>&nbsp;${l10n.t(item.number)}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`UserData:`)}</td><td>&nbsp;${l10n.t(item.userData)}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Created:`)}</td><td>&nbsp;${l10n.t(item.creationTimestamp)}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Size in bytes:`)}</td><td>&nbsp;${item.size}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Page Length:`)}</td><td>&nbsp;${l10n.t(item.pageLength)}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Form Type:`)}</td><td>&nbsp;${l10n.t(item.formType)}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Output Queue:`)}</td><td>&nbsp;${l10n.t(item.queueLibrary), item.queue}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Device Type:`)}</td><td>&nbsp;${l10n.t(item.deviceType)}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Filter:`)}</td><td>&nbsp;${l10n.t(item.parent.filter)}</td></tr>`)
+      );
+      // if (showDebugInfo) {
+      item.tooltip = item.tooltip.appendMarkdown(``
+        .concat(`<tr><td>${l10n.t(`path:`)}</td><td>&nbsp;${item.path}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.readonly:`)}</td><td>&nbsp;${item.openQueryparms.readonly}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.openMode:`)}</td><td>&nbsp;${item.openQueryparms.openMode}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.position:`)}</td><td>&nbsp;${item.openQueryparms.position}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.pageLength:`)}</td><td>&nbsp;${item.openQueryparms.pageLength}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.fileExtension:`)}</td><td>&nbsp;${item.openQueryparms.fileExtension}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.saveToPath:`)}</td><td>&nbsp;${item.openQueryparms.saveToPath}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.tempPath:`)}</td><td>&nbsp;${item.openQueryparms.tempPath}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.qualifiedJobName:`)}</td><td>&nbsp;${item.openQueryparms.qualifiedJobName}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.spooledFileNumber:`)}</td><td>&nbsp;${item.openQueryparms.spooledFileNumber}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`Open Parms.spooledFileName:`)}</td><td>&nbsp;${item.openQueryparms.spooledFileName}</td></tr>`)
+      );
+      // }
+      item.tooltip = item.tooltip.appendMarkdown(``
         .concat(`</table>`)
       );
       item.tooltip.supportHtml = true;
@@ -221,7 +240,7 @@ export class SpooledFileFilter extends vscode.TreeItem {
   }
   clearToolTip() { this.tooltip = undefined; }
   // setDescription(value: string | boolean) { this.description = (value?value:``)+this.sortDescription; }
-  setRecordCount(amount: number) {this.numberOf = amount;}
+  setRecordCount(amount: number) { this.numberOf = amount; }
 }
 
 export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
@@ -245,6 +264,7 @@ export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
   protected: boolean;
   path: string;
   deviceType: string;
+  openQueryparms: SplfOpenOptions;
   readonly sort: SortOptions = { order: "date", ascending: true };
   readonly sortBy: (sort: SortOptions) => void;
   /**
@@ -282,17 +302,27 @@ export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
     this.iconPath = new vscode.ThemeIcon(icon);
     this.protected = parent.protected;
     this.contextValue = `spooledfile${this.protected ? `_readonly` : ``}`;
-    this.resourceUri = getSpooledFileUri(parent.type, inp, parent.protected ? { readonly: true } : undefined) || '';
-    this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
     this.deviceType = ``;
 
+    this.iconPath = new vscode.ThemeIcon(icon, (this.protected ? new vscode.ThemeColor(`list.errorForeground`) : undefined));
+    this.sortBy = (sort: SortOptions) => parent.sortBy(sort);
+    this.openQueryparms = this.setOpenQueryparms(this);
+    this.resourceUri = getSpooledFileUri(parent.type, inp, this.openQueryparms) || '';
+    this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
     this.command = {
       command: `vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing`,
       title: `Open Spooled File`,
-      arguments: [this]
+      arguments: [this, undefined, this.openQueryparms]
     };
-    this.iconPath = new vscode.ThemeIcon(icon, (this.protected ? new vscode.ThemeColor(`list.errorForeground`) : undefined));
-    this.sortBy = (sort: SortOptions) => parent.sortBy(sort);
+  }
+  setOpenQueryparms(me: SpooledFiles): SplfOpenOptions {
+    return {
+      readonly: me.parent.protected,
+      qualifiedJobName: me.qualifiedJobName,
+      spooledFileNumber: me.number,
+      spooledFileName: me.name,
+    } as SplfOpenOptions
+      ;
   }
 }
 
@@ -324,4 +354,12 @@ function getContent() {
   else {
     throw new Error(l10n.t('Not connected to an IBM i'));
   }
+}
+function formatToolTip(label: string, obj: Record<string, any>): string {
+  const md = Object.entries(obj)
+    .map(([key, val]) => `<tr><td>${l10n.t(`${label}:`)}</td><td>&nbsp;${l10n.t(val)}</td></tr>`
+    )
+    .join()
+    ;
+  return md;
 }

@@ -118,7 +118,7 @@ class LineHit extends vscode.TreeItem {
 
     const upperContent = line.content.toUpperCase();
     const upperTerm = term.toUpperCase();
-    let openOptions: SplfOpenOptions = { };
+    let openOptions: SplfOpenOptions = { } as SplfOpenOptions;
     let index = 0;
 
     // Calculate the highlights
@@ -144,14 +144,12 @@ class LineHit extends vscode.TreeItem {
       label: line.content.trim(),
       highlights
     });
+    // TODO: how do I get the job details from SPLF search?
     openOptions = {
       readonly: readonly || false,
       openMode: "withoutSpaces",
-      position: openOptions?.position || undefined,
       fileExtension: 'SPLF', 
-      saveToPath: undefined,
-      tempPath: undefined
-    };
+    } as SplfOpenOptions;
     this.resourceUri = getUriFromPathSplf(this.path, openOptions);
     this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
 

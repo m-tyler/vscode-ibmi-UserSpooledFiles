@@ -5,7 +5,7 @@ import { CommandResult, RemoteCommand, IBMiObject } from '@halcyontech/vscode-ib
 import { SortOrder } from '@halcyontech/vscode-ibmi-types/api/IBMiContent';
 import { Tools } from '@halcyontech/vscode-ibmi-types/api/Tools';
 import vscode from "vscode";
-import { FuncInfo, IBMiSpooledFile } from './typings';
+import { FuncInfo, IBMiSpooledFile, SplfOpenOptions } from './typings';
 import { posix } from "path";
 import { loadBase, getBase } from './base';
 
@@ -149,9 +149,9 @@ export function buildPathFileNamefromPattern(filterType: string, splf: IBMiSpool
     case `pageLength`:
       newName += splf.pageLength;
       break;
-    case `qualifiedJobName`:
-      newName += splf.qualifiedJobName.replace(/[/]/, '-');
-      break;
+    // case `qualifiedJobName`:
+    //   newName += splf.qualifiedJobName.replace(/[/]/, '-');
+    //   break;
     case `jobName`:
       newName += splf.jobName;
       break;
@@ -182,17 +182,15 @@ export function getMyConfig(configName: string) {
 
   return mySpooledConfig;
 }
-export function breakUpPathFileName(pPath: string): Map<string,string> {
-  let counter = 0;
-  // get from config
+export function breakUpPathFileName(pPath: string, namePattern?: string): Map<string,string> {
   const myConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
-  let namePattern: string = myConfig.get<string>('spooledFileNamePattern') || '';
+  namePattern = namePattern||myConfig.get<string>('spooledFileNamePattern') || '';
   if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
   
   // pattern values are separated by commas.  
   const patterns = namePattern.split(/,\s*/);
   const pathParts = pPath.split('/');
-  const nameParts = pathParts[2].split(/[~.]/);
+  const nameParts = pathParts.at(-1)?.split(/[~.]/)??[];
   
   const namePartMap: Map<string, string> = new Map();
   // map this user ID
@@ -268,6 +266,35 @@ export async function checkSystemFunctionState(sysFunction: string, action: stri
     }
     return true; // Function installed in product library
   }
+}
+export function buildQueryParms(values:SplfOpenOptions): string {
+  let qp = '?readonly='+values.readonly+'&splfName='+values.spooledFileName+'&splfNum='+values.spooledFileNumber
+            +'&qjn='+values.qualifiedJobName;
+  return qp;
+}
+export function fillEmptyFields<T extends Record<string,any>>(target: T, source: T):T {
+  const result = {...target};
+  for (const key in target) {
+    const val = target[key];
+    const isEmpty = val === undefined || val === null || val === undefined
+                    ||(typeof val === 'string' && val.trim() === '')
+    ;
+    if (isEmpty && source[key] !== undefined && source[key] !== null) {
+      result[key] = source[key];
+    }
+  }
+  return result;
+
+}
+export function mergeObjects<T extends Record<string,any>>(target: T, source: T):T {
+  const result = {...target};
+  for (const key in source) {
+    if (!(key in target)) {
+      result[key] = source[key];
+    }
+  }
+  return result;
+
 }
 function getSource(func: string, library: string) {
   switch (func) {

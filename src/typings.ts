@@ -39,6 +39,10 @@ export interface SplfOpenOptions {
   fileExtension?: string|undefined;
   saveToPath?: string|undefined;
   tempPath?: boolean|undefined;
+  qualifiedJobName :string
+  spooledFileNumber: string
+  spooledFileName: string
+  namePattern?: string
 }
 
 export interface FuncInfo {

@@ -8,7 +8,7 @@ import sanitize from 'sanitize-filename';
 import vscode, { l10n, TextDocumentShowOptions } from 'vscode';
 import { SplfFS } from "../src/filesystem/qsys/SplfFs";
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
-import { Code4i } from "./tools";
+import { Code4i, mergeObjects } from "./tools";
 import { IBMISplfList, IBMiSpooledFile, SplfOpenOptions } from './typings';
 import SPLFBrowser, { SpooledFileFilter, SpooledFiles } from './views/SplfsView';
 import { TempFileManager } from './tools/tempFileManager';
@@ -483,7 +483,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
               message: l10n.t(`Filtering spooled files for {0}, using these words, {1} spooled files.`, searchName, searchTerm),
             });
             searchTerm = searchTerm.toLocaleUpperCase();
-            const splfnum = await IBMiContentSplf.getFilterSpooledFileCount({ name: searchName, library: node.library, type: node.type } as IBMISplfList );
+            const splfnum = await IBMiContentSplf.getFilterSpooledFileCount({ name: searchName, library: node.library, type: node.type } as IBMISplfList);
             if (Number(splfnum.numberOf) > 0) {
               if (node.contextValue === `spooledfile`) {
                 node.parent.setFilter(searchTerm);
@@ -517,13 +517,9 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       }
       if (!nodes || nodes.length === 0) { return; }
       options = {
-        readonly: options?.readonly || nodes[0].protected || false,
         openMode: options?.openMode || "withSpaces",
-        position: options?.position || undefined,
-        fileExtension: options?.fileExtension || undefined,
-        saveToPath: options?.saveToPath || undefined,
         tempPath: options?.tempPath || false
-      };
+      } as SplfOpenOptions;
       return vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileDefault", node, nodes, options);
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFileDefault`, async (node: SpooledFiles, nodes?: SpooledFiles[], options?: SplfOpenOptions) => {
@@ -532,14 +528,13 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
         nodes.push(node);
       }
       if (!nodes || nodes.length === 0) { return; }
-      options = {
+      const globalOptions = {
         readonly: options?.readonly || nodes[0].protected || false,
         openMode: options?.openMode || "withoutSpaces",
-        position: options?.position || undefined,
-        fileExtension: options?.fileExtension || undefined,
-        saveToPath: options?.saveToPath || undefined,
-        tempPath: options?.tempPath || false
-      };
+        tempPath: options?.tempPath || false,
+      } as SplfOpenOptions;
+      options = options || {} as SplfOpenOptions;
+      options = mergeObjects(options, globalOptions);
       // // if (node) {
       if (!options?.fileExtension || options?.fileExtension === "") {
         options.fileExtension = await vscode.window.showInputBox({
@@ -551,8 +546,6 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       else { }
       if (!options?.fileExtension) { return; }
       options.fileExtension = options.fileExtension.toLowerCase();
-      options.pageLength = node.pageLength;
-      options.openMode = (options.openMode || "withoutSpaces");
       let splfContent: string = ``;
       let localFileUri: vscode.Uri;
       let localFileUris: vscode.Uri[] = [];
@@ -570,7 +563,8 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
           progress.report({
             message: l10n.t(`Downloading spooled file contents`),
           });
-          splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path || '', options);
+          const openOptions = mergeObjects(options, node.openQueryparms);
+          splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path || '', openOptions);
         });
         const tmpExt = path.extname(node.path);
         const fileName = sanitize(path.basename(node.path, tmpExt));
@@ -637,13 +631,11 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       }
       if (!nodes || nodes.length === 0) { return; }
       options = {
-        readonly: options?.readonly || node.protected || false,
         openMode: options?.openMode || "withSpaces",
-        position: options?.position || undefined,
         fileExtension: options?.fileExtension || `SPLF`,
         saveToPath: options?.saveToPath || os.tmpdir(),
-        tempPath: true
-      };
+        tempPath: true,
+      } as SplfOpenOptions;
       nodes = await IBMiContentSplf.updateNodeSpooledFilePageSize(nodes);
       vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing", node, nodes, options)
         .then(async (localFileUris) => {
@@ -666,13 +658,11 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       }
       if (!nodes || nodes.length === 0) { return; }
       options = {
-        readonly: options?.readonly || node.protected || false,
         openMode: options?.openMode || "withSpaces",
-        position: options?.position || undefined,
         fileExtension: options?.fileExtension || `SPLF`,
         saveToPath: options?.saveToPath || os.tmpdir(),
-        tempPath: true
-      };
+        tempPath: true,
+      } as SplfOpenOptions;
       nodes = await IBMiContentSplf.updateNodeSpooledFilePageSize(nodes);
       vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileDefault", node, nodes, options)
         .then(async (localFileUris) => {
@@ -695,13 +685,11 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       }
       if (!nodes || nodes.length === 0) { return; }
       options = {
-        readonly: options?.readonly || node.protected || false,
         openMode: options?.openMode || "withoutSpaces",
-        position: options?.position || undefined,
         fileExtension: options?.fileExtension || `SPLF`,
         saveToPath: options?.saveToPath || os.tmpdir(),
-        tempPath: true
-      };
+        tempPath: true,
+      } as SplfOpenOptions;
       vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileDefault", node, nodes, options)
         .then(async (localFileUris) => {
           try {
@@ -727,15 +715,13 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
         nodes.push(node);
       }
       if (!nodes || nodes.length === 0) { return; }
-      let options: SplfOpenOptions = {};
-      options = {
-        readonly: options?.readonly || node.protected || false,
+      // let options: SplfOpenOptions = {};
+      const options = {
         openMode: "withSpaces",
-        position: options?.position || undefined,
         fileExtension: `PDF`,
         saveToPath: os.tmpdir(),
         tempPath: true
-      };
+      } as SplfOpenOptions;
       vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileDefault", node, nodes, options)
         .then(async (localFileUris) => {
           try {

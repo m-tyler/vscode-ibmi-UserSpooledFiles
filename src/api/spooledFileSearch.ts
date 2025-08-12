@@ -25,7 +25,7 @@ export namespace SplfSearch {
     content: string
   }
 
-  export async function searchSpooledFiles( searchTerm: string, filter: IBMISplfList, splfName?: string, searchWords?: string): Promise<Result[]> {
+  export async function searchSpooledFiles( searchTerm: string, filter: IBMISplfList, splfName?: string, searchFilter?: string): Promise<Result[]> {
     const connection = Code4i.getConnection();
     const config = Code4i.getConfig();
     const content = Code4i.getContent();
@@ -46,7 +46,7 @@ export namespace SplfSearch {
               library: filter.library,
               type: filter.type,
             } as IBMISplfList;
-        let objects = await IBMiContentSplf.getSpooledFileFilter( treeFilter, { order: "date", ascending: false }, splfName, searchWords);
+        let objects = await IBMiContentSplf.getSpooledFileFilter( treeFilter, { order: "date", ascending: false }, splfName, searchFilter);
         objects = await IBMiContentSplf.updateSpooledFileDeviceType(objects);
         const workFileFormat = {
           user: objects[0].jobUser,

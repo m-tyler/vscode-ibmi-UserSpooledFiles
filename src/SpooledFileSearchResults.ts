@@ -12,6 +12,7 @@ interface SearchParms {
   splfName: any,
   term: any,
   word: any,
+  filter: any
 };
 
 
@@ -27,12 +28,13 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
         search.library = node.parent.library; // USER or OUTQ library
         search.type = node.parent.type; // USER or OUTQ 
         search.splfName = node.name;
-        search.word = node.parent.filter;
+        search.filter = node.parent.filter;
       }
       else if (node && (/^splflist/.test(node.contextValue))) {
         search.item = node.name; // USER or OUTQ name
         search.library = node.library; // USER or OUTQ library
         search.type = node.type; // USER or OUTQ 
+        search.filter = node.filter;
       }
       if (!search.item) {
         const config = getConfig();
@@ -88,7 +90,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
             });
             let splf: IBMiSplfCounts;
             splf = await IBMiContentSplf.getFilterSpooledFileCount( { name: search.item, library: search.library, type: search.type } as IBMISplfList
-              , search.term
+              , search.filter
             );
             if (Number(splf.numberOf) > 0) {
               // ATTENTION: if more messages are added, lower the timeout interval
@@ -115,7 +117,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
                 }
               }, timeoutInternal);
               // vscode.commands.executeCommand(`vscode-ibmi-splfbrowser.revealSPLFBrowser`, node, {expand:true});
-              let results = await SplfSearch.searchSpooledFiles(search.term, {name:search.item, library:search.library, type:search.type}, search.splfName, search.word);
+              let results = await SplfSearch.searchSpooledFiles(search.term, {name:search.item, library:search.library, type:search.type}, search.splfName, search.filter);
               if (results.length > 0) {
                 results.forEach(result => {
                   // if (objectNamesLower === true) {

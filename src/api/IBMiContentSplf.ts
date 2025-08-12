@@ -36,11 +36,11 @@ export namespace IBMiContentSplf {
   * @param {IBMISplfList} treeFilter 
   * @param {string} SortOptions
   * @param {string} splfName
-  * @param {string} searchWords
+  * @param {string} searchFilter
   * @param {number} resultLimit sometimes system can only handle so many results, default is 10000. 
   * @returns {Promise<IBMiSpooledFile[]>} returns array of spooled files for filter criteria of type {@link IBMiSpooledFile}
   */
-  export async function getSpooledFileFilter(treeFilter: IBMISplfList, sort: SortOptions, splfName?: string, searchWords?: string, resultLimit?: number): Promise<IBMiSpooledFile[]> {
+  export async function getSpooledFileFilter(treeFilter: IBMISplfList, sort: SortOptions, splfName?: string, searchFilter?: string, resultLimit?: number): Promise<IBMiSpooledFile[]> {
     const connection = Code4i.getConnection();
 
     sort.order = sort.order || 'date';
@@ -68,7 +68,7 @@ export namespace IBMiContentSplf {
       return [];
     }
 
-    let searchWords_ = searchWords?.split(' ') || [];
+    let searchFilter_ = searchFilter?.split(' ') || [];
     let returnSplfList = results
       .map(result => ({
         name: connection.sysNameInLocal(String(result.SPOOLED_FILE_NAME)),
@@ -87,7 +87,7 @@ export namespace IBMiContentSplf {
         queueLibrary: connection.sysNameInLocal(String(result.OUTPUT_QUEUE_LIBRARY)),
         queue: connection.sysNameInLocal(String(result.OUTPUT_QUEUE)),
       } as IBMiSpooledFile))
-      .filter(obj => searchWords_.length === 0 || searchWords_.some(term => Object.values(obj).join(" ").includes(term)))
+      .filter(obj => searchFilter_.length === 0 || searchFilter_.some(term => Object.values(obj).join(" ").includes(term)))
       ;
 
     return returnSplfList;
@@ -102,15 +102,15 @@ export namespace IBMiContentSplf {
   */
   export async function downloadSpooledFileContent(pPath: string, options: SplfOpenOptions): Promise<string> {
     pPath = pPath.replace(/^\/+/, '') || '';
-    const parts = breakUpPathFileName(pPath);
+    const parts = breakUpPathFileName(pPath, options.namePattern);
 
     const connection = Code4i.getConnection();
     const tempRmt = connection.getTempRemote(pPath);
     const tmplclfile = await tmpFile();
-    const splfName = parts.get("name") || '';
-    const splfNumber = parts.get("number") || '';
-    const qualifiedJobName = parts.get("jobNumber") + '/' + parts.get("jobUser") + '/' + parts.get("jobName");
-    let fileExtension = parts.get("fileExtension") || 'splf';
+    const splfName = options.spooledFileName||parts.get("name") || '';
+    const splfNumber = options.spooledFileNumber||parts.get("number") || '';
+    const qualifiedJobName = options.qualifiedJobName||parts.get("jobNumber") + '/' + parts.get("jobUser") + '/' + parts.get("jobName");
+    let fileExtension = options.fileExtension||parts.get("fileExtension") || 'splf';
 
     const client = connection.client;
     let openMode: string = 'WithoutSpaces';
@@ -286,9 +286,9 @@ export namespace IBMiContentSplf {
    * @param {string} searchWord - optional, Additional words used to filter results
    * @returns a promised array of type, {@link IBMiSplfCounts} 
   */
-  export async function getFilterSpooledFileCount(treeFilter: IBMISplfList, searchWords?: string): Promise<IBMiSplfCounts> {
+  export async function getFilterSpooledFileCount(treeFilter: IBMISplfList, searchFilter?: string): Promise<IBMiSplfCounts> {
     let query = ``;
-    const searchWordsU = searchWords?.toLocaleUpperCase() || '';
+    const searchFilterU = searchFilter?.toLocaleUpperCase() || '';
     let queryParm = ``;
     if (treeFilter.type === 'USER') {
       queryParm = `USER_NAME => '${treeFilter.name}'`;
@@ -296,24 +296,24 @@ export namespace IBMiContentSplf {
       queryParm = `USER_NAME=> '*ALL', OUTPUT_QUEUE => '${treeFilter.library}/${treeFilter.name}'`;
     }
 
-    if (treeFilter.type === 'USER' || treeFilter.type === 'OUTQ' && searchWords) {
+    if (treeFilter.type === 'USER' || treeFilter.type === 'OUTQ' && searchFilter) {
       query = `select count(*) SPLF_COUNT, sum(TOTAL_PAGES) TOTAL_PAGES
         from table (QSYS2.SPOOLED_FILE_INFO(${queryParm}) ) SPE 
         where FILE_AVAILABLE = '*FILEEND' 
-        ${searchWordsU ? ` and (ucase(SPE.SPOOLED_FILE_NAME) like '%${searchWordsU}%'
-                              or ucase(SPE.STATUS) like '%${searchWordsU}%'
-                              or char(SPE.CREATION_TIMESTAMP) like '%${searchWordsU}%'
-                              or ucase(SPE.USER_DATA) like '%${searchWordsU}%'
-                              or ucase(SPE.QUALIFIED_JOB_NAME) like '%${searchWordsU}%'
-                              or ucase(SPE.JOB_NAME) like '%${searchWordsU}%'
-                              or ucase(SPE.JOB_USER) like '%${searchWordsU}%'
-                              or ucase(SPE.JOB_NUMBER) like '%${searchWordsU}%'
-                              or ucase(SPE.FORM_TYPE) like '%${searchWordsU}%'
-                              or ucase(SPE.OUTPUT_QUEUE_LIBRARY) like '%${searchWordsU}%'
-                              or ucase(SPE.OUTPUT_QUEUE) like '%${searchWordsU}%'
+        ${searchFilterU ? ` and (ucase(SPE.SPOOLED_FILE_NAME) like '%${searchFilterU}%'
+                              or ucase(SPE.STATUS) like '%${searchFilterU}%'
+                              or char(SPE.CREATION_TIMESTAMP) like '%${searchFilterU}%'
+                              or ucase(SPE.USER_DATA) like '%${searchFilterU}%'
+                              or ucase(SPE.QUALIFIED_JOB_NAME) like '%${searchFilterU}%'
+                              or ucase(SPE.JOB_NAME) like '%${searchFilterU}%'
+                              or ucase(SPE.JOB_USER) like '%${searchFilterU}%'
+                              or ucase(SPE.JOB_NUMBER) like '%${searchFilterU}%'
+                              or ucase(SPE.FORM_TYPE) like '%${searchFilterU}%'
+                              or ucase(SPE.OUTPUT_QUEUE_LIBRARY) like '%${searchFilterU}%'
+                              or ucase(SPE.OUTPUT_QUEUE) like '%${searchFilterU}%'
                         )` : ''}
         `.replace(/\n\s*/g, ' ');
-    } else if (treeFilter.type === 'OUTQ' && !searchWords) {
+    } else if (treeFilter.type === 'OUTQ' && !searchFilter) {
       query = `select NUMBER_OF_FILES SPLF_COUNT, 0 TOTAL_PAGES 
       from QSYS2.OUTPUT_QUEUE_INFO 
       ${treeFilter.library === `*LIBL` ? `inner join QSYS2.LIBRARY_LIST_INFO LL on OQ.OUTPUT_QUEUE_LIBRARY_NAME = LL.SYSTEM_SCHEMA_NAME` : ``}
