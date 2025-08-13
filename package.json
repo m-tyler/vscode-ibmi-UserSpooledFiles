@@ -2,7 +2,7 @@
   "name": "vscode-ibmi-userspooledfiles",
   "displayName": "Code for IBM i Spooled Files",
   "description": "Tools to view and manage Spooled Files on IBM i",
-  "version": "1.1.2",
+  "version": "1.2.0",
   "preview": false,
   "license": "MIT",
   "engines": {
