@@ -5,6 +5,8 @@
   * Fix bad command name for delete all spooled files
   * Fixed capitalization on command titles. 
   * Enhanced download save dialog to only show once for a group of selected spooled files.
+  * Added more verbose messaging while downloading spooled files.
+  * Fixed bug where downloading/open multiple spooled files of mixed *SCS and *AFPDS, once a change in type occurred remaining spooled files opened in that type mode. 
   
 ## Version 1.1.2
   * Added functionality to track and remove temp files used for downloaded spooled files opened into edit tabs

@@ -8,7 +8,7 @@ import sanitize from 'sanitize-filename';
 import vscode, { l10n, TextDocumentShowOptions } from 'vscode';
 import { SplfFS } from "../src/filesystem/qsys/SplfFs";
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
-import { Code4i, mergeObjects } from "./tools";
+import { Code4i, mergeObjects, numberToWords, toTitleCase } from "./tools";
 import { IBMISplfList, IBMiSpooledFile, SplfOpenOptions } from './typings';
 import SPLFBrowser, { SpooledFileFilter, SpooledFiles } from './views/SplfsView';
 import { TempFileManager } from './tools/tempFileManager';
@@ -524,7 +524,8 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.downloadSpooledFileDefault`, async (node: SpooledFiles, nodes?: SpooledFiles[], options?: SplfOpenOptions) => {
       // put single selection into array and just use array for further work
-      if (node && nodes && nodes.length === 0) {
+      if (node && (!nodes || nodes.length === 0)) {
+        nodes = [];
         nodes.push(node);
       }
       if (!nodes || nodes.length === 0) { return; }
@@ -545,27 +546,18 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       }
       else { }
       if (!options?.fileExtension) { return; }
-      options.fileExtension = options.fileExtension.toLowerCase();
+      let defaultFileExtension = options.fileExtension.toLowerCase();
       let splfContent: string = ``;
-      let localFileUri: vscode.Uri;
+      let localFileUri: vscode.Uri | undefined;
       let localFileUris: vscode.Uri[] = [];
       const newNodes = await IBMiContentSplf.updateNodeSpooledFileDeviceType(nodes);
+      let fileSaveNumber = 0;
       for (let node of newNodes) {
-        if (node.deviceType === '*AFPDS') { options.fileExtension = 'pdf'; }
+        if (node.deviceType === '*AFPDS') {options.fileExtension = 'pdf';} else {options.fileExtension = defaultFileExtension;}
         if (node.deviceType === '*USERASCII') {
           vscode.window.showWarningMessage(l10n.t(`Spooled File {0} in {1} is not eligible for operation.`, node.name, node.queue));
           continue;
         }
-        await vscode.window.withProgress({
-          location: vscode.ProgressLocation.Window,
-          // title: l10n.t(`Downloading spooled file content`),
-        }, async progress => {
-          progress.report({
-            message: l10n.t(`Downloading spooled file contents`),
-          });
-          const openOptions = mergeObjects(options, node.openQueryparms);
-          splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path || '', openOptions);
-        });
         const tmpExt = path.extname(node.path);
         const fileName = sanitize(path.basename(node.path, tmpExt));
         let localFilePathBase: string = '';
@@ -586,11 +578,12 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
           localFileUri = vscode.Uri.file(localFilePathBase);
         }
         if (!options.saveToPath) {
-          localFileUri = await vscode.window.showSaveDialog({ defaultUri: localFileUri }) || localFileUri;
+          localFileUri = await vscode.window.showSaveDialog({ defaultUri: localFileUri });
         }
         else {
         }
         if (localFileUri) {
+          fileSaveNumber++;
           let localFilePath = localFileUri.path;
           options.saveToPath = path.dirname(localFilePath);
           if (process.platform === `win32`) {
@@ -606,6 +599,16 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
               break;
             default:
             }
+            await vscode.window.withProgress({
+              location: vscode.ProgressLocation.Window,
+              // title: l10n.t(`Downloading spooled file content`),
+            }, async progress => {
+              progress.report({
+                message: l10n.t(`Downloading spooled file contents (${fileSaveNumber})`),
+              });
+              const openOptions = mergeObjects(options, node.openQueryparms);
+              splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path || '', openOptions);
+            });
             await writeFileAsync(localFilePath, splfContent, fileEncoding);
             tempFileManager.registerTempFile(localFilePath);
           } catch (e: unknown) {
@@ -620,8 +623,26 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       // } else {
       //   //Running from command pallet (F1).
       // }
-      if (localFileUris.length > 0) {
-        vscode.window.showInformationMessage(l10n.t(`One or more spooled File were downloaded.`));
+      if (!options.tempPath) {
+        let msg = '';
+        // Temp paths are used for just opening spooled reports.  So assume its a downloaded file.
+        if (localFileUris.length > 0 && newNodes.length > 0) {
+          if (localFileUris.length === 1) {
+            msg = path.basename(localFileUris[0].path);
+            vscode.window.showInformationMessage(l10n.t(`${msg} spooled file(s) downloaded.`));
+          } else {  
+            msg = toTitleCase(numberToWords(localFileUris.length));
+            vscode.window.showInformationMessage(l10n.t(`${msg} spooled file(s) downloaded.`));
+          }
+        } else
+          if (localFileUris.length > 0 && newNodes.length > 0 && localFileUris.length !== newNodes.length) {
+            const not = newNodes.length - localFileUris.length;
+            msg = toTitleCase(numberToWords(localFileUris.length));
+            vscode.window.showInformationMessage(l10n.t(`${msg} spooled file(s) downloaded. But there were ${numberToWords(not)} that did not.`));
+          } else
+            if (localFileUris.length === 0) {
+              vscode.window.showInformationMessage(l10n.t(`No spooled file(s) downloaded.`));
+            }
       }
       return localFileUris;
     }),

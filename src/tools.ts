@@ -176,30 +176,30 @@ export function buildPathFileNamefromPattern(filterType: string, splf: IBMiSpool
 
   return newName;
 }
-export function getMyConfig(configName: string) { 
+export function getMyConfig(configName: string) {
   const myConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
   let mySpooledConfig: string = myConfig.get<string>(`${configName}`) || '';
 
   return mySpooledConfig;
 }
-export function breakUpPathFileName(pPath: string, namePattern?: string): Map<string,string> {
+export function breakUpPathFileName(pPath: string, namePattern?: string): Map<string, string> {
   const myConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
-  namePattern = namePattern||myConfig.get<string>('spooledFileNamePattern') || '';
+  namePattern = namePattern || myConfig.get<string>('spooledFileNamePattern') || '';
   if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
-  
+
   // pattern values are separated by commas.  
   const patterns = namePattern.split(/,\s*/);
   const pathParts = pPath.split('/');
-  const nameParts = pathParts.at(-1)?.split(/[~.]/)??[];
-  
+  const nameParts = pathParts.at(-1)?.split(/[~.]/) ?? [];
+
   const namePartMap: Map<string, string> = new Map();
   // map this user ID
   // map the outq name
-  namePartMap.set('userOutqLib',pathParts[0]);
-  namePartMap.set('queue',pathParts[1]);
-  
+  namePartMap.set('userOutqLib', pathParts[0]);
+  namePartMap.set('queue', pathParts[1]);
+
   for (let i = 0; i < patterns.length; i++) {
-    namePartMap.set(patterns[i],nameParts[i]);
+    namePartMap.set(patterns[i], nameParts[i]);
   }
 
   return namePartMap;
@@ -267,18 +267,18 @@ export async function checkSystemFunctionState(sysFunction: string, action: stri
     return true; // Function installed in product library
   }
 }
-export function buildQueryParms(values:SplfOpenOptions): string {
-  let qp = '?readonly='+values.readonly+'&splfName='+values.spooledFileName+'&splfNum='+values.spooledFileNumber
-            +'&qjn='+values.qualifiedJobName;
+export function buildQueryParms(values: SplfOpenOptions): string {
+  let qp = '?readonly=' + values.readonly + '&splfName=' + values.spooledFileName + '&splfNum=' + values.spooledFileNumber
+    + '&qjn=' + values.qualifiedJobName;
   return qp;
 }
-export function fillEmptyFields<T extends Record<string,any>>(target: T, source: T):T {
-  const result = {...target};
+export function fillEmptyFields<T extends Record<string, any>>(target: T, source: T): T {
+  const result = { ...target };
   for (const key in target) {
     const val = target[key];
     const isEmpty = val === undefined || val === null || val === undefined
-                    ||(typeof val === 'string' && val.trim() === '')
-    ;
+      || (typeof val === 'string' && val.trim() === '')
+      ;
     if (isEmpty && source[key] !== undefined && source[key] !== null) {
       result[key] = source[key];
     }
@@ -286,8 +286,8 @@ export function fillEmptyFields<T extends Record<string,any>>(target: T, source:
   return result;
 
 }
-export function mergeObjects<T extends Record<string,any>>(target: T, source: T):T {
-  const result = {...target};
+export function mergeObjects<T extends Record<string, any>>(target: T, source: T): T {
+  const result = { ...target };
   for (const key in source) {
     if (!(key in target)) {
       result[key] = source[key];
@@ -296,6 +296,54 @@ export function mergeObjects<T extends Record<string,any>>(target: T, source: T)
   return result;
 
 }
+export function numberToWords(num: number): string {
+  if (num === 0) {
+    return "zero";
+  }
+
+  const ones = ["", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen"];
+  const tens = ["", "", "twenty", "thirty", "forty", "fifty", "sixty", "seventy", "eighty", "ninety"];
+  const magnitudes = ["", "thousand", "million", "billion", "trillion"]; // Extend as needed
+
+  let words = "";
+  let magnitudeIndex = 0;
+
+  if (num < 0) {
+    words += "minus ";
+    num = Math.abs(num); // Ensure positive for processing
+  }
+
+  while (num > 0) {
+    let chunk = num % 1000;
+    if (chunk !== 0) {
+      let chunkWords = convertChunkToWords(chunk, ones, tens);
+      words = chunkWords + " " + magnitudes[magnitudeIndex] + " " + words;
+    }
+    num = Math.floor(num / 1000);
+    magnitudeIndex++;
+  }
+  return words.trim();
+}
+
+function convertChunkToWords(chunk: number, ones: string[], tens: string[]): string {
+  let chunkWords = "";
+  if (chunk < 20) {
+    chunkWords = ones[chunk];
+  } else {
+    chunkWords = tens[Math.floor(chunk / 10)] + " " + ones[chunk % 10];
+  }
+
+  if (chunk >= 100) {
+    chunkWords = ones[Math.floor(chunk / 100)] + " hundred " + convertChunkToWords(chunk % 100, ones, tens);
+  }
+  return chunkWords.trim();
+}
+export function toTitleCase(str: string): string {
+  return str.replace(/\w\S*/g, (txt) => {
+    return txt.charAt(0).toUpperCase() + txt.substr(1).toLowerCase();
+  });
+}
+
 function getSource(func: string, library: string) {
   switch (func) {
   case `SPOOLED_FILE_DATA`:
