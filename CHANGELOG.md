@@ -4,6 +4,7 @@
   * Search issue from version 1.1.2 update, search returned no spooled files to search through.
   * Fix bad command name for delete all spooled files
   * Fixed capitalization on command titles. 
+  * Enhanced download save dialog to only show once for a group of selected spooled files.
   
 ## Version 1.1.2
   * Added functionality to track and remove temp files used for downloaded spooled files opened into edit tabs
