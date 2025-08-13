@@ -591,11 +591,12 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
         else {
         }
         if (localFileUri) {
-          let localPath = localFileUri.path;
+          let localFilePath = localFileUri.path;
+          options.saveToPath = path.dirname(localFilePath);
           if (process.platform === `win32`) {
             //Issue with getFile not working propertly on Windows
             //when there was a / at the start.
-            if (localPath[0] === `/`) { localPath = localPath.substring(1); }
+            if (localFilePath[0] === `/`) { localFilePath = localFilePath.substring(1); }
           }
           try {
             let fileEncoding: BufferEncoding | null = `utf8`;
@@ -605,8 +606,8 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
               break;
             default:
             }
-            await writeFileAsync(localPath, splfContent, fileEncoding);
-            tempFileManager.registerTempFile(localPath);
+            await writeFileAsync(localFilePath, splfContent, fileEncoding);
+            tempFileManager.registerTempFile(localFilePath);
           } catch (e: unknown) {
             if (e instanceof Error) {
               vscode.window.showErrorMessage(l10n.t(`Error downloading Spoooled File! {0}.`, e));
