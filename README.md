@@ -24,6 +24,9 @@ Has support for:
 *  Configuration option to clean up temporary spooled files, see config name `vscode-ibmi-splfbrowser.tempSpooledFileCleanup`.
 ---
 
+## Dependencies
+*  You need to install a PDF viewer to open PDFs within VS Code.
+
 ## NOTES:
   * There is a small issue in an IBM view this extension is using, in that if the OUTQ the spooled file is in is too large (100000+ entries for example) some functionality will appear to slow down.  I am using the QSYS2.OUTPUT_QUEUE_ENTRIES_BASIC to retrieve the spooled file device type so that the extension can prevent non-*SCS types from being searched or open *AFPDS as PDF types by default.  It does not matter if I ask for a details of single spooled file using very specific criteria or the whole set of spooled files in an OUTQ with a enormous number of spooled files. 
 

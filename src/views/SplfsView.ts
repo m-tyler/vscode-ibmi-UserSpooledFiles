@@ -157,7 +157,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
       item.tooltip = new vscode.MarkdownString(`<table>`
         .concat(`<thead>${item.path.split(`/`)[2]}</thead><hr>`)
         .concat(`<tr><td style="text-align: right;">${l10n.t(`Job:`)}</td><td>&nbsp;${l10n.t(item.qualifiedJobName)}</td></tr>`)
-        .concat(`<tr><td>${l10n.t(`File Number:`)}</td><td>&nbsp;${l10n.t(item.number)}</td></tr>`)
+        .concat(`<tr><td>${l10n.t(`File Number:`)}</td><td>&nbsp;${item.number}</td></tr>`)
         .concat(`<tr><td>${l10n.t(`UserData:`)}</td><td>&nbsp;${l10n.t(item.userData)}</td></tr>`)
         .concat(`<tr><td>${l10n.t(`Created:`)}</td><td>&nbsp;${l10n.t(item.creationTimestamp)}</td></tr>`)
         .concat(`<tr><td>${l10n.t(`Size in bytes:`)}</td><td>&nbsp;${item.size}</td></tr>`)
@@ -167,7 +167,8 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
         .concat(`<tr><td>${l10n.t(`Device Type:`)}</td><td>&nbsp;${l10n.t(item.deviceType)}</td></tr>`)
         .concat(`<tr><td>${l10n.t(`Filter:`)}</td><td>&nbsp;${l10n.t(item.parent.filter)}</td></tr>`)
       );
-      // if (showDebugInfo) {
+      console.log(`item.number == ${item.number}`);
+      if (showDebugInfo) {
       item.tooltip = item.tooltip.appendMarkdown(``
         .concat(`<tr><td>${l10n.t(`path:`)}</td><td>&nbsp;${item.path}</td></tr>`)
         .concat(`<tr><td>${l10n.t(`Open Parms.readonly:`)}</td><td>&nbsp;${item.openQueryparms.readonly}</td></tr>`)
@@ -181,7 +182,7 @@ export default class SPLFBrowser implements TreeDataProvider<any> {
         .concat(`<tr><td>${l10n.t(`Open Parms.spooledFileNumber:`)}</td><td>&nbsp;${item.openQueryparms.spooledFileNumber}</td></tr>`)
         .concat(`<tr><td>${l10n.t(`Open Parms.spooledFileName:`)}</td><td>&nbsp;${item.openQueryparms.spooledFileName}</td></tr>`)
       );
-      // }
+      }
       item.tooltip = item.tooltip.appendMarkdown(``
         .concat(`</table>`)
       );
