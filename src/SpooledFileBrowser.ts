@@ -659,7 +659,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
         tempPath: true,
       } as SplfOpenOptions;
       nodes = await IBMiContentSplf.updateNodeSpooledFilePageSize(nodes);
-      vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileWithLineSpacing", node, nodes, options)
+      vscode.commands.executeCommand("vscode-ibmi-splfbrowser.downloadSpooledFileDefault", node, nodes, options)
         .then(async (localFileUris) => {
           try {
             for (let localFileUri of localFileUris as vscode.Uri[]) {

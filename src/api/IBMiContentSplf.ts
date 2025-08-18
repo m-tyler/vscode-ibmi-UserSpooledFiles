@@ -316,7 +316,7 @@ export namespace IBMiContentSplf {
         `.replace(/\n\s*/g, ' ');
     } else if (treeFilter.type === 'OUTQ' && !searchFilter) {
       query = `select NUMBER_OF_FILES SPLF_COUNT, 0 TOTAL_PAGES 
-      from QSYS2.OUTPUT_QUEUE_INFO 
+      from QSYS2.OUTPUT_QUEUE_INFO OQ
       ${treeFilter.library === `*LIBL` ? `inner join QSYS2.LIBRARY_LIST_INFO LL on OQ.OUTPUT_QUEUE_LIBRARY_NAME = LL.SYSTEM_SCHEMA_NAME` : ``}
       where OUTPUT_QUEUE_NAME = '${treeFilter.name}' 
       ${treeFilter.library !== `*LIBL` ? `and OUTPUT_QUEUE_NAME = '${treeFilter.library}'` : ``}
