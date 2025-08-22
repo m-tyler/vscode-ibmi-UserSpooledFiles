@@ -192,6 +192,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
       }
     }),
     vscode.commands.registerCommand(`vscode-ibmi-splfbrowser.deleteSpooledFile`, async (node: any, nodes?: any[]) => {
+      nodes = nodes || []; 
       // put single selection into array and just use array for further work
       if (node && nodes && nodes.length === 0) {
         nodes.push(node);
