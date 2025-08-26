@@ -84,12 +84,6 @@ export const IBMI_OBJECT_NAME = /^([\w$#@][\w\d$#@_.]{0,9})$/i;
 //   return `${iasp ? `/${iasp.toUpperCase()}` : ''}/QSYS.LIB/${library.toUpperCase()}.LIB/${name.toUpperCase()}.${type.toUpperCase()}${member ? `/${member.toUpperCase()}.MBR` : ''}`;
 // }
 
-// export function makeid(length?: number) {
-//   return codeForIBMi.tools.makeid(length);
-// }
-// export function getInstance(): Instance | undefined {
-//   return (baseExtension && baseExtension.isActive && baseExtension.exports ? baseExtension.exports.instance : undefined);
-// }
 export function sanitizeSearchTerm(searchTerm: string): string {
   return searchTerm.replace(/\\/g, `\\\\`).replace(/"/g, `\\"`);
 }
@@ -101,9 +95,6 @@ export function nthIndex(aString: string, pattern: string, n: number) {
   }
   return index;
 }
-// export async function checkObject(library: string, name: string, type: string) {
-//   return await Code4i.getContent().checkObject({ library, name, type });
-// };
 export function buildPathFileNamefromPattern(filterType: string, splf: IBMiSpooledFile): string {
   let newName = ``;
   if (filterType === 'OUTQ') {
@@ -225,7 +216,6 @@ export async function whereIsCustomFunc(funcName: string): Promise<FuncInfo> {
     comment: String(funcLookupRS[0].LONG_COMMENT)
   };
 }
-
 export async function checkSystemFunctionState(sysFunction: string, action: string): Promise<boolean> {
 
   let lstate: boolean;

@@ -43,6 +43,7 @@ export async function initializeSpooledFileSearchView(context: vscode.ExtensionC
           prompt: l10n.t(`If no library given then assumed *LIBL.`),
           title: l10n.t(`Search User or OUTQ spooled files`),
         });
+        if (!search.item) { vscode.window.showErrorMessage(l10n.t(`Search canceled.`)); return;}
         const splitUp = search.item.split('/');
         if (splitUp.Length === 2) {
           search.library = splitUp[0];
