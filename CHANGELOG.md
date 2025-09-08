@@ -1,5 +1,16 @@
 # Change Log
-## Version 1.1.3
+
+## Version 1.2.3
+  * Add configuration setting to default opening spooled file with or without extra lines.
+
+## Version 1.2.2
+  * Deleting selected spooled file was the only command affected.
+
+## Version 1.2.1
+  * The tooltip hover functionality to get the number of spooled files for the filter, returns an SQL error. 
+  * Opening a SPOOL FILE with line spacing was causing the select file extension and save dialogs to appear. 
+
+## Version 1.2.0
   * Made fix for when user select name patterns for spooled file tab, CPYSPLF continues to work.
   * Search issue from version 1.1.2 update, search returned no spooled files to search through.
   * Fix bad command name for delete all spooled files

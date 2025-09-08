@@ -8,7 +8,7 @@ import sanitize from 'sanitize-filename';
 import vscode, { l10n, TextDocumentShowOptions } from 'vscode';
 import { SplfFS } from "../src/filesystem/qsys/SplfFs";
 import { IBMiContentSplf } from "./api/IBMiContentSplf";
-import { Code4i, mergeObjects, numberToWords, toTitleCase } from "./tools";
+import { Code4i, mergeObjects, numberToWords, toTitleCase, getMyConfig } from "./tools";
 import { IBMISplfList, IBMiSpooledFile, SplfOpenOptions } from './typings';
 import SPLFBrowser, { SpooledFileFilter, SpooledFiles } from './views/SplfsView';
 import { TempFileManager } from './tools/tempFileManager';
@@ -605,7 +605,7 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
               // title: l10n.t(`Downloading spooled file content`),
             }, async progress => {
               progress.report({
-                message: l10n.t(`Downloading spooled file contents (${fileSaveNumber})`),
+                message: l10n.t(`Downloading spooled file contents ({0}])`, fileSaveNumber),
               });
               const openOptions = mergeObjects(options, node.openQueryparms);
               splfContent = await IBMiContentSplf.downloadSpooledFileContent(node.resourceUri?.path || '', openOptions);
@@ -680,8 +680,11 @@ export function initializeSpooledFileBrowser(context: vscode.ExtensionContext, t
         nodes.push(node);
       }
       if (!nodes || nodes.length === 0) { return; }
+      const openWithLinsSpacing = <boolean>getMyConfig('openWithLineSpacing');
+      // const splfBrowserConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
+      // let openWithLinsSpacing: any = splfBrowserConfig.get<boolean>('openWithLineSpacing') || false;
       options = {
-        openMode: options?.openMode || "withSpaces",
+        openMode: options?.openMode || openWithLinsSpacing?'withSpaces':'withoutSpaces',
         fileExtension: options?.fileExtension || `SPLF`,
         saveToPath: options?.saveToPath || os.tmpdir(),
         tempPath: true,

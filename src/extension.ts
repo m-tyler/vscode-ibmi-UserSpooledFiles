@@ -13,7 +13,7 @@ let tempFileManager: TempFileManager;
 export async function activate(context: vscode.ExtensionContext) {
 	tempFileManager = new TempFileManager();
 	await Code4i.initialize(context);
-	initializeSpooledFileBrowser(context,tempFileManager);
+	initializeSpooledFileBrowser(context, tempFileManager);
 	await initializeSpooledFileSearchView(context);
 	console.log(`Congratulations, extension "${context.extension.packageJSON.description}", "Version" :"${context.extension.packageJSON.version}" is now active!`);
 
