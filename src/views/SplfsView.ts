@@ -311,7 +311,7 @@ export class SpooledFiles extends vscode.TreeItem implements IBMiSpooledFile {
     this.resourceUri = getSpooledFileUri(parent.type, inp, this.openQueryparms) || '';
     this.path = this.resourceUri.path.substring(1); // removes leading slash for QSYS paths
     this.command = {
-      command: `vscode-ibmi-splfbrowser.openSplfWithoutLineSpacing`,
+      command: `vscode-ibmi-splfbrowser.openSplfWithDefault`,
       title: `Open Spooled File`,
       arguments: [this, undefined, this.openQueryparms]
     };

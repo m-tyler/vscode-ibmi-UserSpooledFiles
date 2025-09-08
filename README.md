@@ -22,6 +22,7 @@ Has support for:
 *  Multi-spooled file selections for many actions.  
 *  Configuration for supplying a opened/downloaded spooled file name, see config name `vscode-ibmi-splfbrowser.spooledFileNamePattern`.
 *  Configuration option to clean up temporary spooled files, see config name `vscode-ibmi-splfbrowser.tempSpooledFileCleanup`.
+*  Configuration option to set if spooled files open with or without extra line spacing, see config name `vscode-ibmi-splfbrowser.openwithLineSpacing`.
 ---
 
 ## Dependencies

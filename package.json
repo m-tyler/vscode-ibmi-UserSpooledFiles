@@ -2,7 +2,7 @@
   "name": "vscode-ibmi-userspooledfiles",
   "displayName": "Code for IBM i Spooled Files",
   "description": "Tools to view and manage Spooled Files on IBM i",
-  "version": "1.2.2",
+  "version": "1.2.3",
   "preview": false,
   "license": "MIT",
   "engines": {
@@ -33,6 +33,10 @@
       {
         "title": "Code for IBM i Spooled Files",
         "properties": {
+          "vscode-ibmi-splfbrowser.openWithLineSpacing": {
+            "type": "boolean",
+            "markdownDescription": "When checked, the default open will be with line spacing option."
+          },
           "vscode-ibmi-splfbrowser.spooledFileNamePattern": {
             "type": "string",
             "markdownDescription": "Additional Spooled File name mapping pattern for when Spooled Files are opened or downloaded.\n\nValid values to choose from; \n- `name` \n- `number` \n- `status` \n- `creationTimestamp` \n- `userData` \n- `size` \n- `totalPages` \n- `pageLength` \n- `qualifiedJobName` \n- `jobName` \n- `jobUser` \n- `jobNumber` \n- `formType` \n- `queueLibrary` \n- `queue` \n\nSeparate selections with commas (,). You must reload the Spooled File list for these changes to take affect.",

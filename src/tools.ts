@@ -32,9 +32,6 @@ export namespace Code4i {
   export function getTempLibrary(): string {
     return getConfig().tempLibrary;
   }
-  export function parserMemberPath(string: string, checkExtension?: boolean): MemberParts {
-    return getInstance().getConnection().parserMemberPath(string, checkExtension);
-  }
   export function getObjectList(filters: {
     library: string;
     object?: string;
@@ -46,6 +43,9 @@ export namespace Code4i {
   // export async function getUserProfileText(user: string): Promise<string | undefined> {
   //   return getInstance().getConnection().getContent().getUserProfileText(user);
   // }
+  export function parserMemberPath(string: string, checkExtension?: boolean): MemberParts {
+    return getInstance().getConnection().parserMemberPath(string, checkExtension);
+  }
   export function sysNameInLocal(string: string): string {
     return getInstance().getConnection().sysNameInLocal(string);
   }
@@ -107,7 +107,7 @@ export function buildPathFileNamefromPattern(filterType: string, splf: IBMiSpool
   const splfBrowserConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
   let namePattern: string = splfBrowserConfig.get<string>('spooledFileNamePattern') || '';
   if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
-  // pattern values are separated by commas.  
+  // pattern values are separated by commas.
   const patterns = namePattern.split(/,\s*/);
   // append pattern to end of passed in name.
   patterns.forEach(element => {
@@ -169,7 +169,7 @@ export function buildPathFileNamefromPattern(filterType: string, splf: IBMiSpool
 }
 export function getMyConfig(configName: string) {
   const myConfig = vscode.workspace.getConfiguration('vscode-ibmi-splfbrowser');
-  let mySpooledConfig: string = myConfig.get<string>(`${configName}`) || '';
+  let mySpooledConfig: any = myConfig.get<string>(`${configName}`);
 
   return mySpooledConfig;
 }
@@ -178,7 +178,7 @@ export function breakUpPathFileName(pPath: string, namePattern?: string): Map<st
   namePattern = namePattern || myConfig.get<string>('spooledFileNamePattern') || '';
   if (namePattern.length === 0) { namePattern = `name,jobName,jobUser,jobNumber,number`; }
 
-  // pattern values are separated by commas.  
+  // pattern values are separated by commas.
   const patterns = namePattern.split(/,\s*/);
   const pathParts = pPath.split('/');
   const nameParts = pathParts.at(-1)?.split(/[~.]/) ?? [];
@@ -204,9 +204,9 @@ export async function whereIsCustomFunc(funcName: string): Promise<FuncInfo> {
     currentUser = connection.currentUser;
   }
   let funcLookupRS: Tools.DB2Row[];
-  let statement = `select SPECIFIC_SCHEMA,SPECIFIC_NAME,ROUTINE_TEXT,LONG_COMMENT 
-    from QSYS2.SYSFUNCS SF 
-    inner join table( values(1,'${currentUser}'),(2,'ILEDITOR'),(3,'SYSTOOLS'),(4,'QSYS2') ) LL (Pos, ASCHEMA) 
+  let statement = `select SPECIFIC_SCHEMA,SPECIFIC_NAME,ROUTINE_TEXT,LONG_COMMENT
+    from QSYS2.SYSFUNCS SF
+    inner join table( values(1,'${currentUser}'),(2,'ILEDITOR'),(3,'SYSTOOLS'),(4,'QSYS2') ) LL (Pos, ASCHEMA)
     on ASCHEMA = SPECIFIC_SCHEMA where ROUTINE_NAME = '${funcName}' limit 1`.replace(/\n\s*/g, ' ');
   funcLookupRS = await Code4i.runSQL(statement);
   return {
@@ -227,7 +227,7 @@ export async function checkSystemFunctionState(sysFunction: string, action: stri
   }
   else {
     let funcInfo: FuncInfo = await whereIsCustomFunc('SPOOLED_FILE_DATA');
-    // Check to see if function updated 
+    // Check to see if function updated
     if (funcInfo.funcSysLib !== `ILEDITOR` && action === `add`) {
       return connection.withTempDirectory(async tempDir => {
         const tempSourcePath = posix.join(tempDir, `overrideSPOOLED_FILE_DATA_Funcition.sql`);
