@@ -2,6 +2,8 @@
   "name": "vscode-ibmi-userspooledfiles",
   "displayName": "Code for IBM i Spooled Files",
   "description": "Tools to view and manage Spooled Files on IBM i",
+  "deprecated": true,
+  "deprecationMessage": "This extension is deprecated. Transistion to [IBM i Queue Objects Viewer](vscode:extension/vscode-ibmi-queues).",
   "version": "1.2.3",
   "preview": false,
   "license": "MIT",
@@ -44,6 +46,10 @@
           },
           "vscode-ibmi-splfbrowser.tempSpooledFileCleanup": {
             "type": "boolean",
+            "markdownDescription": "When checked and VS Code closes, clean up left over temp Spooled Files from users %TMP% folder."
+          },
+          "vscode-ibmi-splfbrowser.spooledFileFilters": {
+            "type": "array",
             "markdownDescription": "When checked and VS Code closes, clean up left over temp Spooled Files from users %TMP% folder."
           }
         }
@@ -172,7 +178,7 @@
         },
         {
           "command": "vscode-ibmi-splfbrowser.deleteSpooledFile",
-          "when": "view == splfBrowser && viewItem =~ /^spooledfile.*$/",
+          "when": "view == splfBrowser && viewItem =~ /^spooledfile$/",
           "group": "inline@4"
         },
         {

@@ -29,6 +29,7 @@ export class TempFileManager {
    */
   public async cleanUpTempFiles(): Promise<void> {
     if (this.trackAndCleanupTmp) {
+      console.log(this.tempFiles.size);
       for (const filePath of this.tempFiles) {
         try {
           fs.unlink(filePath); // Delete the file
