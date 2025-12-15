@@ -1,7 +1,3 @@
-This extension is deprecated. Transition to [IBM i Queue Objects Viewer](vscode:extension/vscode-ibmi-queues)
-This extension is deprecated. Transition to [fabiospampinato.vscode-highlight](vscode:extension/vscode:extension/fabiospampinato.vscode-highlight)
-
-
 # vscode-ibmi-UserSpooledFiles
 
 This extension provides views and tools for listing a user's spooled file and managing them (one at a time).  
