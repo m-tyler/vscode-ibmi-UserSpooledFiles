@@ -48,7 +48,7 @@
           },
           "vscode-ibmi-splfbrowser.spooledFileFilters": {
             "type": "array",
-            "markdownDescription": "When checked and VS Code closes, clean up left over temp Spooled Files from users %TMP% folder."
+            "markdownDescription": "Array of USER or OUTQ names to load spooled files from"
           }
         }
       }
