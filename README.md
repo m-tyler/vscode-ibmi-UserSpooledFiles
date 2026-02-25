@@ -1,9 +1,14 @@
 # vscode-ibmi-UserSpooledFiles
 
+**Important!** 
+This extension is deprecated. 
+I am no longer maintaining this extension.
+Transition to [IBM i Queue Objects Viewer](https://marketplace.visualstudio.com/items?itemName=m-tyler.vscode-ibmi-queues).
+
+<!-- 
 This extension provides views and tools for listing a user's spooled file and managing them (one at a time).  
 
 ## Current functionality
-
 Has support for:
 *  Listing user spooled files
 *  Adding addition users to view spooled file for in read-only mode
@@ -50,4 +55,4 @@ Has support for:
 3. Install Code for IBM i types, see: https://codefori.github.io/docs/dev/api/#typings
 3. `npm i`
 4. 'Run Extension' from vscode debug.
-
+ -->
