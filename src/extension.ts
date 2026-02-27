@@ -16,16 +16,16 @@ export async function activate(context: vscode.ExtensionContext) {
 	initializeSpooledFileBrowser(context, tempFileManager);
 	await initializeSpooledFileSearchView(context);
 	// console.log(`Congratulations, extension "${context.extension.packageJSON.description}", "Version" :"${context.extension.packageJSON.version}" is now active!`);
-	// const item = { title: 'Upgrade now' };
-	// const result = await vscode.window.showWarningMessage("This extension is deprecated. Transition to [IBM i Queue Objects Viewer](vscode:extension/vscode-ibmi-queues)! Upgrade now for the latest features.", item);
-	// if (result === item) {
-	// 	// await vscode.commands.executeCommand('workbench.extensions.installExtension', 'newPublisher.newExtensionName');
-	// 	// await vscode.commands.executeCommand('workbench.extensions.uninstallExtension', 'oldPublisher.oldExtensionName');
-	// 	// vscode.commands.executeCommand("workbench.action.reloadWindow");
-	// }
+	const item = { title: 'Upgrade now' };
+	const result = await vscode.window.showWarningMessage("This extension is deprecated. Transition to [IBM i Queue Objects Viewer](https://marketplace.visualstudio.com/items?itemName=m-tyler.vscode-ibmi-queues)! Upgrade now for the latest features.", item);
+	if (result === item) {
+		// await vscode.commands.executeCommand('workbench.extensions.installExtension', 'newPublisher.newExtensionName');
+		// await vscode.commands.executeCommand('workbench.extensions.uninstallExtension', 'oldPublisher.oldExtensionName');
+		// vscode.commands.executeCommand("workbench.action.reloadWindow");
+	}
 	let disposable = vscode.commands.registerCommand('extension.showLinkMessage', async () => {
 		const option = await vscode.window.showWarningMessage(
-			'Important: This extension is deprecated. Transition to [IBM i Queue Objects Viewer](vscode:extension/vscode-ibmi-queues)! Upgrade now for the latest features.',
+			'Important: This extension is deprecated. Transition to [IBM i Queue Objects Viewer](https://marketplace.visualstudio.com/items?itemName=m-tyler.vscode-ibmi-queues)! Upgrade now for the latest features.',
 			'Open Docs' // Button Text
 		);
 

@@ -2,8 +2,12 @@
 
 **Important!** 
 This extension is deprecated. 
+\
 I am no longer maintaining this extension.
-Transition to [IBM i Queue Objects Viewer](https://marketplace.visualstudio.com/items?itemName=m-tyler.vscode-ibmi-queues).
+\
+Transition to [IBM i Queue Objects Viewer](https://marketplace.visualstudio.com/items?itemName=m-tyler.vscode-ibmi-queues) on MS Marketplace.
+\
+Or transition to [IBM i Queue Objects Viewer](https://open-vsx.org/extension/m-tyler/vscode-ibmi-queues) on Open VSX Registry. 
 
 <!-- 
 This extension provides views and tools for listing a user's spooled file and managing them (one at a time).  
